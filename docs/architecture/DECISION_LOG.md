@@ -29,7 +29,7 @@ Do not delete or rewrite adopted decisions silently. For each material change ad
 
 ## ADR-0004 — Flutter UI + Rust shared core + native platform media adapters
 - Date: 2026-11-10
-- Status: PROPOSED; FEASIBILITY GATE R0
+- Status: SUPERSEDED by ADR-0006 (was: PROPOSED; FEASIBILITY GATE R0)
 - Decision: Cross-platform Flutter app shell and pure portable Rust session/translation state; use Swift/Kotlin/native implementations for media/accelerator/secure key and output.
 - Alternatives: fully native Swift+Kotlin; pure Flutter plugins; Tauri desktop plus native tablet apps.
 - Validation: benchmark native texture zero-copy properties, FFI calls, memory ownership, file and UVC render throughput across devices.
@@ -44,6 +44,21 @@ Do not delete or rewrite adopted decisions silently. For each material change ad
 - Consequences: async/texture plumbing is still open; FSM is pure and deterministic for golden tests.
 - Windows impact: WIN-CHANGE-20261110-001; core tested on windows-latest in CI.
 - Related FR/AC: FR-007, FR-010, AC-004, AC-010, AC-018, AC-021, AC-022.
+
+## ADR-0006 — Native UI per platform + Rust core via UniFFI
+- Date: 2026-11-10
+- Status: ACCEPTED (product owner decision); performance validation at R0
+- Supersedes: ADR-0004 (Flutter UI). ADR-0005 skeleton otherwise unchanged.
+- Context: Product owner asked for native apps. Video, GPU and capture are native anyway; a Flutter layer adds a texture bridge (KI-008, D-003) between the video surface and the UI.
+- Decision: SwiftUI single multiplatform target for iPadOS + macOS (`app/apple`); Kotlin + Jetpack Compose for Android (`app/android`); Windows later in WinUI/C#. Shared logic stays in Rust `core/rust`; `core/ffi` exposes it via UniFFI (Swift + Kotlin now, C# bindings at R5).
+- Alternatives: Flutter UI (ADR-0004); fully native without Rust (core logic duplicated in Swift/Kotlin/C#, rejected: drift risk, conflicts with §19.1).
+- Benefits: direct Metal/SurfaceView video, no Dart bridge, first-class platform accessibility and store review. Drawbacks: 2 UI codebases now (3 at R5); screen behavior must be kept in sync via §11 inventory and shared tests in core.
+- Privacy/security/license: uniffi (MPL-2.0, build/runtime glue) and JNA (Apache-2.0/LGPL dual) added — record in SBOM.
+- Platform implications: iPadOS 17+/macOS 14+ (SwiftUI), Android minSdk 31 (Android 12).
+- Windows impact (ledger record): WIN-CHANGE-20261110-002.
+- Migration/rollback: Flutter shell had no features; removed. Revert this ADR + restore `app/flutter_ui` from git history if needed.
+- Validation evidence: macOS XCTest 2/2 via FFI; iPadOS generic build OK; Android APK assembles with arm64-v8a + x86_64 `libsubtitle_ffi.so`; not run on a device yet.
+- Related FR/AC: FR-010, NFR-004, NFR-008, AC-004, AC-021.
 
 ## New ADR template
 

@@ -9,6 +9,8 @@
 | KI-005 | Cloud BYOK direct key placement may violate some provider security guidance/terms | High | OPEN | verify each provider | Security lead |
 | KI-006 | App Store model packaging and paid licensing workflow unverified | High | OPEN | store/legal spike | Release lead |
 | KI-007 | Commercial translation/copyright treatment requires jurisdiction-specific review | High | OPEN | legal counsel | Legal lead |
-| KI-008 | Flutter texture + native GPU/AI contention unmeasured | High | OPEN | native performance spike | Client lead |
-| KI-009 | Flutter shell not built or tested locally (no Flutter SDK); platform runners not generated | Medium | OPEN | install Flutter, `flutter create`, run `flutter test` | Client lead |
+| KI-008 | Native video surface + GPU/AI contention unmeasured (Flutter bridge removed by ADR-0006) | High | OPEN | native performance spike | Client lead |
+| KI-009 | ~~Flutter shell not built~~ — CLOSED by ADR-0006 (Flutter removed) | — | CLOSED | — | Client lead |
+| KI-011 | Android app built but not yet launched on an emulator/tablet; no Compose UI test yet | Medium | OPEN | run on tablet, add instrumented test | Android lead |
+| KI-012 | Apple builds need a signing team for device install; CI builds unsigned | Low | OPEN | set DEVELOPMENT_TEAM in project.yml | iOS lead |
 | KI-010 | Owners for all roles/decisions D-001..D-009 unassigned | High | OPEN | kickoff assignment (§22.2 step 1) | PM |

@@ -8,6 +8,9 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — Native UI (2026-11-10)
+- Replaced Flutter shell with native SwiftUI (iPadOS + macOS) and Kotlin/Jetpack Compose (Android) apps calling the Rust core via UniFFI (`core/ffi`). Handoff README bumped to v2.1. ADR-0006 supersedes ADR-0004. Windows ledger: WIN-CHANGE-20261110-002.
+
 ## [Unreleased] — Day-1 skeleton (2026-11-10)
 - Added repo layout, Rust `subtitle_core` (contracts, epoch, FSM, cache key) with 9 tests, Flutter Home shell, platform stubs, CI, `check_windows_impact.sh`, PR template. Windows ledger: WIN-CHANGE-20261110-001. ADR-0005. No hardware evidence; all QA rows remain NOT_TESTED.
 

@@ -15,6 +15,7 @@
 | QA-005 | macOS | TBD | PS5 console UVC | TBD | negotiate | TBD | Internal/TV | NOT_TESTED | TBD |
 | QA-006 | Android tablet | TBD | Xbox console UVC | TBD / powered hub | negotiate | TBD | Internal | NOT_TESTED | TBD |
 | QA-007 | iPadOS | TBD | UVC + external TV simultaneously | TBD / dock | negotiate | TBD | Processed TV | NOT_TESTED | TBD |
+| QA-009 | macOS | MacBook Pro M4 Max / macOS 26.7.1 | USB UVC webcam (OBSBOT Meet SE, VID 13668 PID 65278) | none | 1920×1080 420v @ 30 fps, no audio | Qwen3-4B Q4_K_M, p2 | Internal | CONDITIONAL — capture path works; no capture card, no latency measurement, unplug not exercised | dev run 2026-11-10 |
 | QA-008 | Android tablet | TBD | UVC + external TV simultaneously | TBD / dock | negotiate | TBD | Processed TV | NOT_TESTED | TBD |
 
 ## Automated software evidence (not device certification)

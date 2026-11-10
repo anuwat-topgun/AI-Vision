@@ -11,6 +11,7 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     CODE_SIGNING_REQUIRED: NO
     INFOPLIST_KEY_NSCameraUsageDescription: "Live Capture reads video from your USB capture card."
+    INFOPLIST_KEY_NSMicrophoneUsageDescription: "Live Capture can play game audio from your capture card."
 targets:
   AIVision:
     type: application

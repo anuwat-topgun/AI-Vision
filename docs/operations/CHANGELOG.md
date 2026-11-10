@@ -8,6 +8,9 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — Live Capture on macOS (E07) (2026-11-10)
+- Live Capture screen: pick a UVC capture device and format (Auto prefers 1080p60), optional capture-card audio, live preview with the Thai subtitle pipeline, capture fps/dropped frames in Debug. Unplug clears subtitles and waits; replugging the same device resumes. Ledger WIN-CHANGE-20261110-008.
+
 ## [Unreleased] — Translation prompt p2 (2026-11-10)
 - Prompt p1 → p2 (Natural Thai Game Localization) per `docs/translation/PROMPT_P2_SPEC.md`; canonical prompts and translation contract moved into Rust core. Typed results: `???`/invalid/timeout never shown. Session history deduped and cleared on seek/new file. Cache keys versioned by prompt/model/history. KV prefix reuse (p2 P50 231 ms on M4 Max).
 - Fixes: crash when prompt exceeded 512 tokens; "AIVision quit unexpectedly" on quit with a model loaded.

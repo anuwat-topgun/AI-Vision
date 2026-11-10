@@ -25,5 +25,8 @@
 | KI-023 | p2 still adds ครับ on ありがとうございます and renders "Leave it to me!" literally (Qwen3-4B) | Medium | OPEN | few-shot examples or larger model; §10.2 human eval | ML lead |
 | KI-024 | Spec §10.2 human evaluation (200 EN + 200 JA, blinded Thai reviewers) not done; only N=12 smoke | High | OPEN | build licensed bilingual fixture set | QA lead |
 | KI-025 | Metal residency sets disabled to avoid ggml exit abort; measure any perf impact on iPad | Low | OPEN | iPad benchmark | iOS lead |
+| KI-026 | Live Capture tested only with a USB webcam; no capture card / console yet, no optical latency measurement (§14) | High | OPEN | test with real capture card (QA-005) | Platform QA |
+| KI-027 | Unplug/replug path implemented but not exercised on hardware | Medium | OPEN | manual unplug test | Platform QA |
+| KI-028 | No live-capture audio on iPadOS yet (no AVCaptureAudioPreviewOutput); A/V sync unmeasured | Medium | OPEN | E06 | iOS lead |
 | KI-012 | Apple builds need a signing team for device install; CI builds unsigned | Low | OPEN | set DEVELOPMENT_TEAM in project.yml | iOS lead |
 | KI-010 | Owners for all roles/decisions D-001..D-009 unassigned | High | OPEN | kickoff assignment (§22.2 step 1) | PM |

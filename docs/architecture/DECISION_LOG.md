@@ -60,6 +60,18 @@ Do not delete or rewrite adopted decisions silently. For each material change ad
 - Validation evidence: macOS XCTest 2/2 via FFI; iPadOS generic build OK; Android APK assembles with arm64-v8a + x86_64 `libsubtitle_ffi.so`; not run on a device yet.
 - Related FR/AC: FR-010, NFR-004, NFR-008, AC-004, AC-021.
 
+## ADR-0007 — Dev-candidate OCR and local translation runtime on Apple
+- Date: 2026-11-10
+- Status: PROPOSED (candidate for R0 scorecard; does not close D-001)
+- Context: Product owner wants an end-to-end macOS test (file video with EN/JA subtitles → offline Thai) before the full model bake-off.
+- Decision: OCR = Apple Vision `VNRecognizeTextRequest` (accurate, ja-JP+en-US, bottom-band ROI) on iPadOS/macOS. Translation = llama.cpp (XCFramework b11811, MIT, Metal offload) running a user-imported GGUF; first tested model Qwen3-4B-Instruct-2507 Q4_K_M (Apache-2.0). Stability/vanish logic and CER live in Rust core (`tracker.rs`) and are shared.
+- Alternatives: Apple Translation framework (simpler, no model files; rejected by product owner in favour of LLM); larger Qwen2.5-7B; MT encoder-decoder models (still to benchmark in SPK-02).
+- Consequences: model weights not shipped in app/repo; users import a GGUF (FR-017 subset). Greedy decoding for deterministic tests. 4B Q4 needs ~3 GB RAM — tablet tiers need smaller models.
+- Privacy/security/license: fully offline; prompt treats OCR text as data with delimiter sanitizing (§7.4). llama.cpp MIT, model Apache-2.0 — add to SBOM.
+- Windows impact: WIN-CHANGE-20261110-005.
+- Validation evidence: macOS M4 Max: OCR CER 0.000 on 6/6 fixture lines; translation 213–435 ms/line; injection test passes; live app screenshots show Thai overlay on both fixtures.
+- Related FR/AC: FR-004, FR-005, FR-006, FR-007, FR-016; AC-005, AC-006, AC-007/008 (partial, macOS only), AC-010, AC-011.
+
 ## New ADR template
 
 ```markdown

@@ -9,6 +9,8 @@ final class PlayerModel: ObservableObject {
     enum LoadState: Equatable { case idle, loading, ready, failed(String) }
 
     let player = AVPlayer()
+    let pipeline = SubtitlePipeline()
+    @Published private(set) var videoSize: CGSize = .zero
     @Published private(set) var state: LoadState = .idle
     @Published private(set) var currentTime: Double = 0
     @Published private(set) var duration: Double = 0
@@ -59,8 +61,15 @@ final class PlayerModel: ObservableObject {
                 return fail("Unsupported file: \(item.error?.localizedDescription ?? "decoder failed")")
             }
             // Source identity is opaque to core; never persist a raw path as identity (§19.1(6)).
-            session = CoreSession(sourceId: "file:\(UUID().uuidString)")
-            epoch = session?.epoch() ?? 0
+            let s = CoreSession(sourceId: "file:\(UUID().uuidString)")
+            session = s
+            epoch = s.epoch()
+            if let track = videoTracks.first {
+                let (size, t) = try await track.load(.naturalSize, .preferredTransform)
+                let r = size.applying(t)
+                videoSize = CGSize(width: abs(r.width), height: abs(r.height))
+            }
+            pipeline.attach(item: item, session: s)
             state = .ready
         } catch {
             fail("Couldn't open the file: \(error.localizedDescription)")
@@ -81,6 +90,7 @@ final class PlayerModel: ObservableObject {
     func seek(to seconds: Double) async -> Bool {
         let target = min(max(0, seconds), duration)
         if let s = session { epoch = s.bump(reason: .seek) }
+        pipeline.invalidate() // clear stale overlay before the new frame shows (AC-010)
         let t = CMTime(seconds: target, preferredTimescale: 600)
         let finished = await player.seek(to: t, toleranceBefore: .zero, toleranceAfter: .zero)
         currentTime = player.currentTime().seconds
@@ -88,6 +98,7 @@ final class PlayerModel: ObservableObject {
     }
 
     func close() {
+        pipeline.detach()
         player.pause()
         player.replaceCurrentItem(with: nil)
         scopedURL?.stopAccessingSecurityScopedResource()

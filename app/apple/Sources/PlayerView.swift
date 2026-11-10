@@ -40,7 +40,10 @@ let videoFileTypes: [UTType] = [.mpeg4Movie, .quickTimeMovie, .movie] + [UTType(
 
 struct FilePlayerScreen: View {
     @StateObject private var model = PlayerModel()
-    @State private var showPicker = true
+    @EnvironmentObject private var models: ModelStore
+    @State private var showModelPicker = false
+    @State private var showDebug = false
+    @State private var showPicker = DevLaunch.file == nil
     @State private var fullscreen = false
     @State private var scrub: Double?
 
@@ -50,6 +53,7 @@ struct FilePlayerScreen: View {
             switch model.state {
             case .ready:
                 PlayerSurface(player: model.player)
+                    .overlay { SubtitleOverlayView(pipeline: model.pipeline, videoSize: model.videoSize, showDebug: showDebug) }
                     .ignoresSafeArea(edges: fullscreen ? .all : [])
                     .accessibilityLabel("Video")
                     .onTapGesture { withAnimation { fullscreen.toggle() } }
@@ -75,11 +79,33 @@ struct FilePlayerScreen: View {
         #endif
         .toolbar {
             ToolbarItem { Button("Open", systemImage: "folder") { showPicker = true } }
+            ToolbarItem { modelButton }
         }
+        .fileImporter(isPresented: $showModelPicker,
+                      allowedContentTypes: [UTType(filenameExtension: "gguf") ?? .data]) { result in
+            if case .success(let url) = result { Task { await models.load(url: url) } }
+        }
+        .task {
+            #if DEBUG
+            if let m = DevLaunch.model { await models.load(url: m, remember: false) }
+            if let f = DevLaunch.file { await model.open(url: f); showDebug = DevLaunch.debug; model.togglePlay() }
+            #endif
+            await models.restore()
+        }
+        .onReceive(models.$state) { _ in model.pipeline.translator = models.translator }
         .fileImporter(isPresented: $showPicker, allowedContentTypes: videoFileTypes) { result in
             if case .success(let url) = result { Task { await model.open(url: url) } }
         }
         .onDisappear { model.close() }
+    }
+
+    @ViewBuilder private var modelButton: some View {
+        switch models.state {
+        case .none: Button("Choose model…", systemImage: "cpu") { showModelPicker = true }
+        case .loading(let n): Label("Loading \(n)…", systemImage: "hourglass")
+        case .ready(let n): Button(n, systemImage: "cpu.fill") { showModelPicker = true }.help("Offline model ready")
+        case .failed(let e): Button("Model error", systemImage: "exclamationmark.triangle") { showModelPicker = true }.help(e)
+        }
     }
 
     private var controls: some View {
@@ -113,6 +139,8 @@ struct FilePlayerScreen: View {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                 }.accessibilityLabel("Fullscreen")
                 Spacer()
+                PipelineControls(pipeline: model.pipeline)
+                Toggle("Debug", isOn: $showDebug)
                 Text("epoch \(model.epoch)").font(.caption.monospaced()).foregroundStyle(.secondary)
             }
             .buttonStyle(.borderless)
@@ -120,4 +148,27 @@ struct FilePlayerScreen: View {
         .padding()
         .background(.bar)
     }
+}
+
+/// Separate view so SwiftUI observes the nested pipeline object directly.
+struct PipelineControls: View {
+    @ObservedObject var pipeline: SubtitlePipeline
+    var body: some View {
+        Picker("Source", selection: $pipeline.hint) {
+            ForEach(LanguageHint.allCases) { Text($0.label).tag($0) }
+        }.frame(maxWidth: 150).accessibilityLabel("Subtitle language")
+        Toggle("ไทย", isOn: $pipeline.enabled).accessibilityLabel("Thai translation")
+    }
+}
+
+/// DEBUG-only launch arguments for local E2E runs, e.g.
+/// `AIVision -file /path/video.mp4 -model ~/Models/x.gguf -debugOverlay YES`. Not in Release builds.
+enum DevLaunch {
+    #if DEBUG
+    static var file: URL? { UserDefaults.standard.string(forKey: "file").map(URL.init(fileURLWithPath:)) }
+    static var model: URL? { UserDefaults.standard.string(forKey: "model").map(URL.init(fileURLWithPath:)) }
+    static var debug: Bool { UserDefaults.standard.bool(forKey: "debugOverlay") }
+    #else
+    static let file: URL? = nil
+    #endif
 }

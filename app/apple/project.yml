@@ -19,12 +19,16 @@ targets:
     dependencies:
       - framework: Generated/SubtitleFFI.xcframework
         embed: false
+      - framework: Vendor/llama.xcframework   # scripts/fetch_llama_xcframework.sh
+        embed: true
     settings:
       base:
         TARGETED_DEVICE_FAMILY: "2"   # iPad only on iOS (README §1.4)
         SUPPORTS_MACCATALYST: NO
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        "LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]": "$(inherited) @executable_path/../Frameworks"
+        "LD_RUNPATH_SEARCH_PATHS[sdk=iphone*]": "$(inherited) @executable_path/Frameworks"
   AIVisionTests:
     type: bundle.unit-test
     supportedDestinations: [iOS, macOS]

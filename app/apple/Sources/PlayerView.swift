@@ -60,6 +60,7 @@ struct FilePlayerScreen: View {
                 if let engine = model.engine {
                 PlayerSurface(layer: engine.videoLayer)
                     .overlay { SubtitleOverlayView(pipeline: model.pipeline, videoSize: model.videoSize, showDebug: showDebug) }
+                    .overlay(alignment: .top) { noModelBanner }
                     .ignoresSafeArea(edges: fullscreen ? .all : [])
                     .accessibilityLabel("Video")
                     .onTapGesture { withAnimation { fullscreen.toggle() } }
@@ -88,9 +89,11 @@ struct FilePlayerScreen: View {
             ToolbarItem { Button("Open", systemImage: "folder") { showPicker = true } }
             ToolbarItem { modelButton }
         }
-        .fileImporter(isPresented: $showModelPicker,
-                      allowedContentTypes: [UTType(filenameExtension: "gguf") ?? .data]) { result in
-            if case .success(let url) = result { Task { await models.load(url: url) } }
+        // .gguf has no system UTType, so filtering by it greys the file out: accept any file, check after.
+        .fileImporter(isPresented: $showModelPicker, allowedContentTypes: [.data, .item]) { result in
+            guard case .success(let url) = result else { return }
+            if url.pathExtension.lowercased() == "gguf" { Task { await models.load(url: url) } }
+            else { models.reject("\(url.lastPathComponent) is not a .gguf model file") }
         }
         .task {
             #if DEBUG
@@ -104,6 +107,28 @@ struct FilePlayerScreen: View {
             if case .success(let url) = result { Task { await model.open(url: url) } }
         }
         .onDisappear { model.close() }
+    }
+
+    /// Actionable prompt instead of a silent "no model" (NFR-009: say what's missing and how to fix it).
+    @ViewBuilder private var noModelBanner: some View {
+        switch models.state {
+        case .none, .failed:
+            HStack(spacing: 10) {
+                Image(systemName: "character.bubble")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ยังไม่ได้เลือกโมเดลแปลภาษา").bold()
+                    if case .failed(let e) = models.state { Text(e).font(.caption) }
+                    else { Text("Choose a .gguf model to translate subtitles to Thai (offline)").font(.caption) }
+                }
+                Button("เลือกโมเดล…") { showModelPicker = true }.buttonStyle(.borderedProminent)
+            }
+            .padding(10).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10)).padding(.top, 12)
+        case .loading(let n):
+            Label("กำลังโหลดโมเดล \(n)…", systemImage: "hourglass")
+                .padding(8).background(.regularMaterial, in: Capsule()).padding(.top, 12)
+        case .ready:
+            EmptyView()
+        }
     }
 
     @ViewBuilder private var modelButton: some View {

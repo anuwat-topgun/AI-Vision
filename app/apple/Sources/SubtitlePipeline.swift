@@ -142,7 +142,7 @@ final class SubtitlePipeline: ObservableObject {
         }
         guard let translator else {
             overlay = Overlay(subtitleId: id, sourceText: text, thai: nil, bbox: box,
-                              status: .failed("No translation model loaded"))
+                              status: .failed("No translation model loaded — choose one with the cpu button"))
             return
         }
         overlay = Overlay(subtitleId: id, sourceText: text, thai: nil, bbox: box, status: .translating)

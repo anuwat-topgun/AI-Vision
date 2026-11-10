@@ -8,6 +8,9 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — Model auto-load (2026-11-10)
+- App loads the last-used model at launch; if none, picks up a local `.gguf` from `~/Models` (macOS, disk only, no download). A banner over the video says when no model is loaded, with a "เลือกโมเดล…" button. Windows impact: NONE beyond UI convenience (WIN-010 UI will need the same prompt).
+
 ## [Unreleased] — MKV support via VLC on macOS (2026-11-10)
 - Video File now opens MKV (and WebM/AVI/TS) on macOS through VLC; MP4/MOV stay on AVFoundation. Thai subtitle pipeline works the same on both. MKV fixtures added. ADR-0008, ledger WIN-CHANGE-20261110-006.
 

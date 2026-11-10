@@ -19,5 +19,8 @@
 | KI-017 | ROI fixed to bottom 36%: dialogue boxes higher on screen are missed; no ROI editor yet | Medium | OPEN | ROI editor (FR-016, E03) | Client lead |
 | KI-018 | Android has no OCR/translation yet (only playback) | High | OPEN | ML Kit/ONNX OCR + llama.cpp Android | Android lead |
 | KI-019 | Translation quality unreviewed; some awkward/drifting lines with Qwen3-4B | High | OPEN | SPK-02 bake-off + native Thai reviewers | ML lead |
+| KI-020 | MKV not supported on iPadOS (needs MobileVLCKit, ~264 MB) | Medium | OPEN | decide after store/legal review | iOS lead |
+| KI-021 | LGPL-2.1 (VLCKit) obligations: attribution + source offer in Help/Legal, relinking; App Store compatibility unreviewed | High | OPEN | legal review before release | Legal lead |
+| KI-022 | VLC A/V sync with our display layer not measured | Medium | OPEN | sync fixture test | QA lead |
 | KI-012 | Apple builds need a signing team for device install; CI builds unsigned | Low | OPEN | set DEVELOPMENT_TEAM in project.yml | iOS lead |
 | KI-010 | Owners for all roles/decisions D-001..D-009 unassigned | High | OPEN | kickoff assignment (§22.2 step 1) | PM |

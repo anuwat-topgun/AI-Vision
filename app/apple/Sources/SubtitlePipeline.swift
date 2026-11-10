@@ -48,8 +48,7 @@ final class SubtitlePipeline: ObservableObject {
     private var ocr = SubtitleOCR()
     private let tracker = SubtitleTracker(stableSamples: 2, missTolerance: 1, minConfidence: 0.4)
     private let ocrQueue = DispatchQueue(label: "aivision.ocr", qos: .userInitiated)
-    private var output: AVPlayerItemVideoOutput?
-    private weak var item: AVPlayerItem?
+    private weak var frames: FrameSource?
     private var session: CoreSession?
     private var timer: Timer?
     private var ocrInFlight = false
@@ -59,14 +58,9 @@ final class SubtitlePipeline: ObservableObject {
     private var currentBox: [UInt64: CGRect] = [:]
     static let promptVersion = "p1"
 
-    func attach(item: AVPlayerItem, session: CoreSession) {
+    func attach(frames: FrameSource, session: CoreSession) {
         detach()
-        let out = AVPlayerItemVideoOutput(pixelBufferAttributes: [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange,
-        ])
-        item.add(out)
-        self.output = out
-        self.item = item
+        self.frames = frames
         self.session = session
         context = []
         timer = Timer.scheduledTimer(withTimeInterval: 1 / sampleRate, repeats: true) { [weak self] _ in
@@ -76,8 +70,7 @@ final class SubtitlePipeline: ObservableObject {
 
     func detach() {
         timer?.invalidate(); timer = nil
-        if let o = output { item?.remove(o) }
-        output = nil; item = nil; session = nil
+        frames = nil; session = nil
         invalidate()
     }
 
@@ -91,10 +84,7 @@ final class SubtitlePipeline: ObservableObject {
     }
 
     private func tick() {
-        guard enabled, !ocrInFlight, let output, let session else { return }
-        let itemTime = output.itemTime(forHostTime: CACurrentMediaTime())
-        guard output.hasNewPixelBuffer(forItemTime: itemTime),
-              let pb = output.copyPixelBuffer(forItemTime: itemTime, itemTimeForDisplay: nil) else { return }
+        guard enabled, !ocrInFlight, let frames, let session, let pb = frames.nextFrame() else { return }
         let tag = (session.sourceId(), session.epoch())
         ocrInFlight = true
         let ocr = self.ocr

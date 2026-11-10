@@ -2,41 +2,46 @@ import AVFoundation
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// AVPlayerLayer host: native video surface, no frame copies (README §4.1).
+/// Hosts the engine's native video layer (AVPlayerLayer or AVSampleBufferDisplayLayer): no frame copies.
 #if os(macOS)
 struct PlayerSurface: NSViewRepresentable {
-    let player: AVPlayer
+    let layer: CALayer
     func makeNSView(context: Context) -> NSView {
         let v = NSView()
         v.wantsLayer = true
-        let layer = AVPlayerLayer(player: player)
-        layer.videoGravity = .resizeAspect
-        layer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
-        v.layer = layer
+        v.layer = CALayer()
+        v.layer?.backgroundColor = .black
+        attach(to: v)
         return v
     }
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    func updateNSView(_ v: NSView, context: Context) { attach(to: v) }
+    private func attach(to v: NSView) {
+        guard layer.superlayer !== v.layer else { return }
+        layer.removeFromSuperlayer()
+        layer.frame = v.bounds
+        layer.autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
+        v.layer?.addSublayer(layer)
+    }
 }
 #else
-final class PlayerLayerView: UIView {
-    override static var layerClass: AnyClass { AVPlayerLayer.self }
-    var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+final class LayerHostView: UIView {
+    var hosted: CALayer? {
+        didSet { oldValue?.removeFromSuperlayer(); if let h = hosted { layer.addSublayer(h) }; setNeedsLayout() }
+    }
+    override func layoutSubviews() { super.layoutSubviews(); hosted?.frame = bounds }
 }
 struct PlayerSurface: UIViewRepresentable {
-    let player: AVPlayer
-    func makeUIView(context: Context) -> PlayerLayerView {
-        let v = PlayerLayerView()
-        v.playerLayer.player = player
-        v.playerLayer.videoGravity = .resizeAspect
-        v.backgroundColor = .black
-        return v
+    let layer: CALayer
+    func makeUIView(context: Context) -> LayerHostView {
+        let v = LayerHostView(); v.backgroundColor = .black; v.hosted = layer; return v
     }
-    func updateUIView(_ uiView: PlayerLayerView, context: Context) {}
+    func updateUIView(_ v: LayerHostView, context: Context) { if v.hosted !== layer { v.hosted = layer } }
 }
 #endif
 
 /// Containers we offer in the picker; actual codec support is checked on open (FR-001).
-let videoFileTypes: [UTType] = [.mpeg4Movie, .quickTimeMovie, .movie] + [UTType(filenameExtension: "mkv")].compactMap { $0 }
+let videoFileTypes: [UTType] = [.mpeg4Movie, .quickTimeMovie, .movie, .video, .audiovisualContent]
+    + ["mkv", "webm", "avi", "m2ts", "ts"].compactMap { UTType(filenameExtension: $0) }
 
 struct FilePlayerScreen: View {
     @StateObject private var model = PlayerModel()
@@ -52,11 +57,13 @@ struct FilePlayerScreen: View {
             Color.black.ignoresSafeArea()
             switch model.state {
             case .ready:
-                PlayerSurface(player: model.player)
+                if let engine = model.engine {
+                PlayerSurface(layer: engine.videoLayer)
                     .overlay { SubtitleOverlayView(pipeline: model.pipeline, videoSize: model.videoSize, showDebug: showDebug) }
                     .ignoresSafeArea(edges: fullscreen ? .all : [])
                     .accessibilityLabel("Video")
                     .onTapGesture { withAnimation { fullscreen.toggle() } }
+                }
             case .loading:
                 ProgressView("Opening…").tint(.white).foregroundStyle(.white)
             case .failed(let msg):
@@ -141,7 +148,7 @@ struct FilePlayerScreen: View {
                 Spacer()
                 PipelineControls(pipeline: model.pipeline)
                 Toggle("Debug", isOn: $showDebug)
-                Text("epoch \(model.epoch)").font(.caption.monospaced()).foregroundStyle(.secondary)
+                Text("\(model.backendName) · epoch \(model.epoch)").font(.caption.monospaced()).foregroundStyle(.secondary)
             }
             .buttonStyle(.borderless)
         }

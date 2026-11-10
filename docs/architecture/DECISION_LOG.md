@@ -72,6 +72,19 @@ Do not delete or rewrite adopted decisions silently. For each material change ad
 - Validation evidence: macOS M4 Max: OCR CER 0.000 on 6/6 fixture lines; translation 213–435 ms/line; injection test passes; live app screenshots show Thai overlay on both fixtures.
 - Related FR/AC: FR-004, FR-005, FR-006, FR-007, FR-016; AC-005, AC-006, AC-007/008 (partial, macOS only), AC-010, AC-011.
 
+## ADR-0008 — VLC backend for MKV and other containers (macOS)
+- Date: 2026-11-10
+- Status: ACCEPTED (product owner: "support MKV and MP4; use VLC if needed")
+- Context: AVFoundation cannot open Matroska (MKV) at all. Users have MKV files.
+- Decision: `PlaybackEngine` abstraction. MP4/MOV → AVFoundation (hardware path, unchanged). MKV/WebM/AVI/TS/… → VLC (VLCKit 3.7.3 macOS, libvlc C API). VLC is also the fallback when AVFoundation rejects a file (but never for DRM-protected files). libvlc decodes into our IOSurface BGRA CVPixelBuffers (vmem callbacks); the same buffer goes to an AVSampleBufferDisplayLayer and to OCR. Audio is played by VLC.
+- Alternatives: VLC for everything (rejected: loses AVFoundation path for MP4); remux MKV→MP4 with an own demuxer (limited codecs); FFmpeg libs (no maintained Apple binary; licensing similar).
+- Consequences: +~90 MB framework on macOS; vmem path costs a CPU colour-convert per frame (fine on Apple Silicon at 1080p60, to be measured on older Macs). VLC clock read via polling.
+- Privacy/security/license: VLCKit/libvlc **LGPL-2.1**: dynamically linked embedded framework (relinkable), license text shipped in app resources; source offer/attribution must be added to Help/Legal before release (KI-021). App Store distribution of LGPL needs legal review (D-005).
+- Platform implications: macOS only now. iPadOS needs MobileVLCKit (~264 MB) — not added (KI-020). Android: Media3 MKV extractor already supports Matroska (verify).
+- Windows impact: WIN-CHANGE-20261110-006.
+- Validation evidence: XCTest 14/14 incl. MKV open/seek/size, OCR on VLC frames paused (CER 0) and during playback (all 3 lines, no wrong reads), MP4 still on AVFoundation; live app screenshot of JA MKV with Thai overlay.
+- Related FR/AC: FR-001, FR-002; AC-002, AC-033.
+
 ## New ADR template
 
 ```markdown

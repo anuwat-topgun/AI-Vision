@@ -31,6 +31,8 @@ QA-001..003 stay NOT_TESTED until run manually on real devices with the full AC 
 |---|---|---|---|---|
 | synth_en_1080p60_001 | EN | bottom subtitle, black outline | 1080p60 H.264 High + AAC 48k, 12 s | QA-001..003, AC-005, E2E-01/03 |
 | synth_ja_1080p60_001 | JA | dialog box | 1080p60 H.264 High + AAC 48k, 12 s | QA-001..003, AC-006, E2E-01/03 |
+| synth_en_mkv_1080p60_001 | EN | same streams as MP4, Matroska container | MKV | VLC backend (macOS) |
+| synth_ja_mkv_1080p60_001 | JA | same streams as MP4, Matroska container | MKV | VLC backend (macOS) |
 
 Not yet covered (add later): furigana, typewriter animation, gradient/animated text, katakana-heavy lines, VFR, MKV/MOV, corrupt file.
 

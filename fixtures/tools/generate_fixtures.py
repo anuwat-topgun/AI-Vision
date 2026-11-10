@@ -151,6 +151,20 @@ def main():
         for s in subs:
             lines += [f"      - start_ms: {s['start_ms']}", f"        end_ms: {s['end_ms']}",
                       f"        text: {yaml_str(s['text'])}", f"        normalized_bbox: {s['normalized_bbox']}"]
+        # MKV variant: same streams remuxed (no re-encode) → identical expected subtitles (ADR-0008).
+        mkv = out.with_suffix(".mkv")
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(out), "-c", "copy", "-map_metadata", "-1",
+                        "-fflags", "+bitexact", str(mkv)], check=True)
+        mkv_id = fx["id"].replace("_1080p60_", "_mkv_1080p60_")
+        lines += [f"  - id: {mkv_id}", f"    path: media/{mkv.name}", f"    derived_from: {fx['id']}",
+                  "    owner: engineering-team", "    license: internal-owned (synthetic; font OFL-1.1)",
+                  f"    language: {fx['language']}", f"    style: {fx['style']}", "    container: mkv",
+                  "    codec: h264", "    audio: aac", f"    width: {W}", f"    height: {H}", f"    fps: {FPS}",
+                  f"    duration_ms: {SECONDS * 1000}", f"    sha256: {sha256(mkv)}", "    redistribution: allowed",
+                  "    expected_subtitles:"]
+        for s in subs:
+            lines += [f"      - start_ms: {s['start_ms']}", f"        end_ms: {s['end_ms']}",
+                      f"        text: {yaml_str(s['text'])}", f"        normalized_bbox: {s['normalized_bbox']}"]
     (ROOT / "manifest.yaml").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("wrote manifest.yaml")
 

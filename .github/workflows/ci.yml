@@ -26,6 +26,7 @@ jobs:
       - run: brew install xcodegen
       - run: scripts/build_apple_core.sh
       - run: scripts/fetch_llama_xcframework.sh
+      - run: scripts/fetch_vlckit.sh
       - run: cd app/apple && xcodegen generate
       - name: macOS unit tests
         run: cd app/apple && xcodebuild -scheme AIVision -destination 'platform=macOS' test CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=

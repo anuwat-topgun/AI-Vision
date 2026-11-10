@@ -26,6 +26,8 @@ enum Golden {
     }
 }
 
+final class NoFrames: FrameSource { func nextFrame() -> CVPixelBuffer? { nil } }
+
 final class FakeTranslator: SubtitleTranslator, @unchecked Sendable {
     let modelId = "fake"
     var delayNs: UInt64 = 0
@@ -66,9 +68,8 @@ final class SubtitlePipelineTests: XCTestCase {
         let p = SubtitlePipeline()
         let fake = FakeTranslator(); fake.delayNs = 200_000_000
         p.translator = fake
-        let item = AVPlayerItem(url: try Golden.url("synth_en_1080p60_001"))
         let s = CoreSession(sourceId: "file:test")
-        p.attach(item: item, session: s)
+        p.attach(frames: NoFrames(), session: s)
         let tag = (s.sourceId(), s.epoch())
         let r = OcrResult(text: "Hello", confidence: 0.9, bbox: CGRect(x: 0.2, y: 0.8, width: 0.6, height: 0.1), language: "en")
         p.handle(r, ocrMs: 1, tag: tag)
@@ -84,7 +85,7 @@ final class SubtitlePipelineTests: XCTestCase {
         let p = SubtitlePipeline()
         p.translator = FakeTranslator()
         let s = CoreSession(sourceId: "file:t2")
-        p.attach(item: AVPlayerItem(url: try Golden.url("synth_en_1080p60_001")), session: s)
+        p.attach(frames: NoFrames(), session: s)
         let tag = (s.sourceId(), s.epoch())
         let r = OcrResult(text: "Hi there", confidence: 0.9, bbox: .zero, language: "en")
         p.handle(r, ocrMs: 1, tag: tag); p.handle(r, ocrMs: 1, tag: tag)

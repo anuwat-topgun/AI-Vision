@@ -12,12 +12,12 @@ xcodebuild -scheme AIVision -destination 'platform=macOS' test
 
 1. One-time setup:
    ```bash
-   scripts/build_apple_core.sh && scripts/fetch_llama_xcframework.sh
+   scripts/build_apple_core.sh && scripts/fetch_llama_xcframework.sh && scripts/fetch_vlckit.sh
    cd app/apple && xcodegen generate && open AIVision.xcodeproj
    ```
 2. Get a GGUF model (not in git). Tested: `Qwen3-4B-Instruct-2507-Q4_K_M.gguf` (Apache-2.0, 2.5 GB,
    sha256 `3605803b…c4c67e597`) from huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF → `~/Models/`.
-3. Run (⌘R) → **Video File** → pick a video with burned-in EN/JA subtitles → toolbar **cpu** button → pick the `.gguf`.
+3. Run (⌘R) → **Video File** → pick a video (MP4/MOV via AVFoundation; **MKV**/WebM/AVI via VLC on macOS) with burned-in EN/JA subtitles → toolbar **cpu** button → pick the `.gguf`.
    The model is remembered. Toggle **Debug** to see the OCR region, detected box, timings and model.
    Source = Auto/English/日本語; **ไทย** turns translation on/off. Subtitles are read in the bottom ~36% of the frame.
 

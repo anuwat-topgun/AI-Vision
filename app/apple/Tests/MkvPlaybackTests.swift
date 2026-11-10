@@ -57,17 +57,22 @@ final class MkvPlaybackTests: XCTestCase {
         _ = try await e.open(url: try url("synth_ja_1080p60_001"))
         var ocr = SubtitleOCR(); ocr.hint = .ja
         var seen = Set<String>(), wrong: [String] = []
-        // For each line: seek into it, keep playing, read frames as they arrive (speed-independent: CI VMs are slow).
+        // For each line: seek into it, play briefly (real decode path), read; retry up to 3×.
+        // Independent of host speed: CI VMs decode/OCR far slower than real Macs.
         for (start, end, _) in Golden.ja {
-            _ = await e.seek(to: start + 0.3)
-            e.play(rate: 1)
-            let deadline = Date().addingTimeInterval(min(2.0, end - start - 0.5))
-            while Date() < deadline {
-                try await Task.sleep(nanoseconds: 50_000_000)
-                guard let pb = e.frames.nextFrame(), let r = try ocr.recognize(pb) else { continue }
-                if Golden.ja.contains(where: { $0.2 == r.text }) { seen.insert(r.text) } else { wrong.append(r.text) }
+            let mid = (start + end) / 2
+            for attempt in 0..<3 where !seen.contains(where: { s in Golden.ja.contains { $0.0 == start && $0.2 == s } }) {
+                _ = await e.seek(to: mid - 0.4 + Double(attempt) * 0.2)
+                e.play(rate: 1); try await Task.sleep(nanoseconds: 300_000_000); e.pause()
+                for _ in 0..<40 {
+                    try await Task.sleep(nanoseconds: 25_000_000)
+                    guard let pb = e.frames.nextFrame() else { continue }
+                    if let r = try ocr.recognize(pb) {
+                        if Golden.ja.contains(where: { $0.2 == r.text }) { seen.insert(r.text) } else { wrong.append(r.text) }
+                    }
+                    break
+                }
             }
-            e.pause()
         }
         e.close()
         XCTAssertEqual(seen.count, 3, "seen \(seen)")

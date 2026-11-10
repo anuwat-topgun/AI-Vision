@@ -8,6 +8,9 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — MKV support via VLC on macOS (2026-11-10)
+- Video File now opens MKV (and WebM/AVI/TS) on macOS through VLC; MP4/MOV stay on AVFoundation. Thai subtitle pipeline works the same on both. MKV fixtures added. ADR-0008, ledger WIN-CHANGE-20261110-006.
+
 ## [Unreleased] — OCR + offline Thai translation on macOS/iPadOS (2026-11-10)
 - Video File mode reads EN/JA burned-in subtitles (Apple Vision), translates offline with a user-imported GGUF model via llama.cpp, and shows Thai above the original. Debug overlay (ROI, box, timings, model). Rust stability tracker + CER shared via FFI. ADR-0007, ledger WIN-CHANGE-20261110-005, BENCH-20261110-001.
 

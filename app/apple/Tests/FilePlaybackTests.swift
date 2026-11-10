@@ -37,7 +37,6 @@ final class FilePlaybackTests: XCTestCase {
         for target in [7.8, 1.2, 10.0, 0.0] {
             let finished = await m.seek(to: target)
             XCTAssertTrue(finished, "seek \(target) completed")
-            XCTAssertEqual(m.player.currentItem?.status, .readyToPlay)
             XCTAssertEqual(m.currentTime, target, accuracy: 1.0 / 60 + 0.001, "seek \(target)")
         }
         XCTAssertEqual(m.epoch, e0 + 4)

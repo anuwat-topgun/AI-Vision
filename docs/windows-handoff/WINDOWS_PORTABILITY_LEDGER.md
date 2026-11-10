@@ -109,6 +109,22 @@
 - ADR link: ADR-0007
 - Status: IMPLEMENTED (Apple), OPEN (Android, Windows)
 
+### WIN-CHANGE-20261110-006 — Playback engine abstraction + VLC for MKV
+- Date / author / PR: 2026-11-10 / Claude Code for repo owner / branch feat/mkv-vlc-backend
+- Requirement and AC IDs: FR-001, FR-002; AC-002, AC-033
+- Current decision and motivation: ADR-0008.
+- Changed modules / contracts / formats: Apple `PlaybackEngine`/`FrameSource` protocols, `AVPlaybackEngine`, `VLCPlaybackEngine` (macOS), pipeline now consumes `FrameSource`; fixtures add MKV remux variants (manifest unchanged schema).
+- iPadOS/macOS behavior: macOS plays MKV via VLC; iPadOS still AVFoundation only (MKV shows "unsupported").
+- Android behavior: Media3 handles MKV natively — add MKV fixture test (TODO).
+- Windows future equivalent and required adapter: libvlc has official Windows builds (same C API, LGPL) — the `VLCPlaybackEngine` vmem approach ports directly (D3D11 texture upload instead of IOSurface), or use Media Foundation for MP4 + libvlc for MKV, mirroring this split. Keep the engine/frame-source contract identical.
+- Compatibility/ABI/API/schema implications: none in core/FFI.
+- Dependency and licensing impact: VLCKit 3.7.3 (LGPL-2.1) macOS; libvlc Windows also LGPL-2.1.
+- Risks/unknowns and experiment needed: CPU cost of vmem at 4K; A/V sync between VLC audio and our display layer (measure with sync fixture).
+- Windows tasks with priority, owner and due milestone: libvlc Windows spike with MKV fixtures (P2, Architecture Lead, R5).
+- Tests / fixtures / evidence: XCTest 14/14 on macOS M4 Max.
+- ADR link: ADR-0008
+- Status: IMPLEMENTED (macOS), OPEN (iPadOS, Windows)
+
 ## Change entry template (append, do not overwrite)
 
 ```markdown

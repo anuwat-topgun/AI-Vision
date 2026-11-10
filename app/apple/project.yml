@@ -15,16 +15,26 @@ targets:
   AIVision:
     type: application
     supportedDestinations: [iOS, macOS]
-    sources: [Sources, Generated/subtitle_ffi.swift]
+    sources:
+      - Sources
+      - Generated/subtitle_ffi.swift
+      - path: Vendor/VLCKit-COPYING.txt   # LGPL-2.1 notice shipped with the app (ADR-0008)
+        buildPhase: resources
+        destinationFilters: [macOS]
     dependencies:
       - framework: Generated/SubtitleFFI.xcframework
         embed: false
       - framework: Vendor/llama.xcframework   # scripts/fetch_llama_xcframework.sh
         embed: true
+      - framework: Vendor/VLCKit.xcframework  # scripts/fetch_vlckit.sh (macOS only, LGPL-2.1, ADR-0008)
+        embed: true
+        destinationFilters: [macOS]
     settings:
       base:
         TARGETED_DEVICE_FAMILY: "2"   # iPad only on iOS (README §1.4)
         SUPPORTS_MACCATALYST: NO
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/VLCBridge.h
+        "HEADER_SEARCH_PATHS[sdk=macosx*]": "$(inherited) \"$(PROJECT_DIR)/Vendor/VLCKit.xcframework/macos-arm64_x86_64/VLCKit.framework/Headers\""
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         "LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]": "$(inherited) @executable_path/../Frameworks"
@@ -43,6 +53,7 @@ targets:
         "TEST_HOST[sdk=macosx*]": "$(BUILT_PRODUCTS_DIR)/AIVision.app/Contents/MacOS/AIVision"
         "TEST_HOST[sdk=iphone*]": "$(BUILT_PRODUCTS_DIR)/AIVision.app/AIVision"
         BUNDLE_LOADER: "$(TEST_HOST)"
+        "HEADER_SEARCH_PATHS[sdk=macosx*]": "$(inherited) \"$(PROJECT_DIR)/Vendor/VLCKit.xcframework/macos-arm64_x86_64/VLCKit.framework/Headers\""
 schemes:
   AIVision:
     build: { targets: { AIVision: all, AIVisionTests: [test] } }

@@ -33,6 +33,35 @@ fixtures:
         end_ms: 10800
         text: "If we split up, meet me at the old well."
         normalized_bbox: [0.2354, 0.8287, 0.5286, 0.0611]
+  - id: synth_en_mkv_1080p60_001
+    path: media/synth_en_1080p60_001.mkv
+    derived_from: synth_en_1080p60_001
+    owner: engineering-team
+    license: internal-owned (synthetic; font OFL-1.1)
+    language: en
+    style: bottom_outline
+    container: mkv
+    codec: h264
+    audio: aac
+    width: 1920
+    height: 1080
+    fps: 60
+    duration_ms: 12000
+    sha256: a4b0e844783be7b058bdd8d330cdd01404698943b74fbd7d86cb52c90853d9cf
+    redistribution: allowed
+    expected_subtitles:
+      - start_ms: 1200
+        end_ms: 3900
+        text: "We should reach the gate before dawn."
+        normalized_bbox: [0.2307, 0.8287, 0.5385, 0.062]
+      - start_ms: 4500
+        end_ms: 7200
+        text: "Keep your lantern low. The guards are near."
+        normalized_bbox: [0.1984, 0.8287, 0.6026, 0.0611]
+      - start_ms: 7800
+        end_ms: 10800
+        text: "If we split up, meet me at the old well."
+        normalized_bbox: [0.2354, 0.8287, 0.5286, 0.0611]
   - id: synth_ja_1080p60_001
     path: media/synth_ja_1080p60_001.mp4
     owner: engineering-team
@@ -48,6 +77,35 @@ fixtures:
     duration_ms: 12000
     audio_markers: 1kHz 50ms beep at each subtitle start_ms
     sha256: 1dddc1275420db0d0b57031edb955d6c8c46c593dd3bbf0d816bbcd1c22ddde7
+    redistribution: allowed
+    expected_subtitles:
+      - start_ms: 1600
+        end_ms: 4200
+        text: "夜明けまでに門へ行こう。"
+        normalized_bbox: [0.3292, 0.8306, 0.3411, 0.0583]
+      - start_ms: 4800
+        end_ms: 7500
+        text: "灯りを低くして。見張りが近い。"
+        normalized_bbox: [0.287, 0.8306, 0.4255, 0.0583]
+      - start_ms: 8100
+        end_ms: 11000
+        text: "はぐれたら、古い井戸で会おう。"
+        normalized_bbox: [0.287, 0.8306, 0.4255, 0.0583]
+  - id: synth_ja_mkv_1080p60_001
+    path: media/synth_ja_1080p60_001.mkv
+    derived_from: synth_ja_1080p60_001
+    owner: engineering-team
+    license: internal-owned (synthetic; font OFL-1.1)
+    language: ja
+    style: dialog_box
+    container: mkv
+    codec: h264
+    audio: aac
+    width: 1920
+    height: 1080
+    fps: 60
+    duration_ms: 12000
+    sha256: 588fef59612c5d19e49b8711de737824edc8f9a8ecae1d56816c09d476a69e4c
     redistribution: allowed
     expected_subtitles:
       - start_ms: 1600

@@ -58,6 +58,9 @@ final class SubtitlePipelineTests: XCTestCase {
                 XCTAssertLessThanOrEqual(cer, 0.05, "\(id): '\(r.text)' vs '\(ref)'")
                 XCTAssertEqual(r.language, id.contains("_ja_") ? "ja" : "en")
                 XCTAssertGreaterThan(r.bbox.minY, 0.75, "bbox should be in the bottom band")
+                // Fixture text is ~48 px at 1080p: the measured line drives Thai size (match original).
+                let lh = try XCTUnwrap(r.lineHeight)
+                XCTAssert((0.03...0.08).contains(lh), "line height \(lh)")
             }
             // Between subtitles there must be no text (detection false positive check).
             let empty = try await Golden.frame(id, at: 0.5)

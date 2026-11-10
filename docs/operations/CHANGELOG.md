@@ -8,6 +8,9 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — Thai text size matches the original (2026-11-10)
+- Thai size now follows the measured source line height (median OCR line), in both Overlay and Replace, for files and Live. New "Aa" menu: "Match original subtitle size" (on by default) and a 60–200% size multiplier; both saved.
+
 ## [Unreleased] — Live subtitle zone and steadier overlay (2026-11-10)
 - Live Capture: "Subtitle zone" button — drag a box over the video; OCR and translation read only inside it. Saved between sessions; "Reset zone" restores the default bottom band.
 - OCR keeps only the subtitle block (lines as tall as the main line and contiguous with it), and drops short off-center text (corner buttons, speaker name tag), so game UI labels such as "Autoplay" / "Story Log" are no longer joined into the sentence even when they share the dialogue font size.

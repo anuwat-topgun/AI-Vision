@@ -6,7 +6,9 @@ struct SubtitleOverlayView: View {
     @ObservedObject var pipeline: SubtitlePipeline
     let videoSize: CGSize
     var showDebug: Bool
-    var fontScale: CGFloat = 1
+    /// User text size, 1 = same as the original subtitle (Settings: "Aa" menu).
+    @AppStorage(SubtitleFontSettings.scaleKey) private var fontScale = 1.0
+    @AppStorage(SubtitleFontSettings.matchKey) private var matchSource = true
     /// MASK_REPLACE (§9.1, FR-011): cover the source text box and draw Thai in its place.
     var replace = false
 
@@ -24,7 +26,7 @@ struct SubtitleOverlayView: View {
     }
 
     @ViewBuilder private func subtitle(_ o: SubtitlePipeline.Overlay, _ rect: CGRect) -> some View {
-        let fontSize = max(14, rect.height * 0.045 * fontScale) // ~48pt at 1080p reference
+        let fontSize = thaiFontSize(rect)
         let top = rect.minY + o.bbox.minY * rect.height
         Group {
             switch o.status {
@@ -61,7 +63,7 @@ struct SubtitleOverlayView: View {
         let luma = bg.map { 0.299 * $0.x + 0.587 * $0.y + 0.114 * $0.z } ?? 0
         let ink: Color = luma > 0.55 ? .black : .white
         // Thai needs ~1.3× the Latin line height; never smaller than readable.
-        let fontSize = max(13, min(rect.height * 0.06 * fontScale, h * 0.75))
+        let fontSize = thaiFontSize(rect)
         ZStack {
             RoundedRectangle(cornerRadius: 4).fill(fill)
             Text(o.thai ?? "")
@@ -77,6 +79,15 @@ struct SubtitleOverlayView: View {
         .frame(minHeight: h)
         .fixedSize(horizontal: false, vertical: true)
         .position(x: rect.minX + box.midX * rect.width, y: rect.minY + box.midY * rect.height)
+    }
+
+    /// Thai point size: the source line height on screen (Vision boxes are ~1.25× the glyph size),
+    /// or the 1080p reference when no line was measured; then the user's scale.
+    private func thaiFontSize(_ rect: CGRect) -> CGFloat {
+        let base: CGFloat
+        if matchSource, let lh = pipeline.lineHeight { base = lh * rect.height / 1.25 }
+        else { base = rect.height * 0.045 } // ~48pt at 1080p
+        return max(9, base * CGFloat(fontScale))
     }
 
     @ViewBuilder private func debugLayer(_ rect: CGRect) -> some View {
@@ -107,5 +118,28 @@ struct SubtitleOverlayView: View {
         let s = min(container.width / content.width, container.height / content.height)
         let w = content.width * s, h = content.height * s
         return CGRect(x: (container.width - w) / 2, y: (container.height - h) / 2, width: w, height: h)
+    }
+}
+
+enum SubtitleFontSettings {
+    static let scaleKey = "subtitleFontScale"
+    static let matchKey = "subtitleFontMatchSource"
+    static let scales: [Double] = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2]
+}
+
+/// "Aa" menu: match the original subtitle size, plus a size multiplier.
+struct SubtitleFontMenu: View {
+    @AppStorage(SubtitleFontSettings.scaleKey) private var scale = 1.0
+    @AppStorage(SubtitleFontSettings.matchKey) private var match = true
+    var body: some View {
+        Menu {
+            Toggle("Match original subtitle size", isOn: $match)
+            Picker("Size", selection: $scale) {
+                ForEach(SubtitleFontSettings.scales, id: \.self) { Text("\(Int($0 * 100))%").tag($0) }
+            }
+            .pickerStyle(.inline)
+        } label: { Label("\(Int(scale * 100))%", systemImage: "textformat.size") }
+        .fixedSize()
+        .accessibilityLabel("Thai text size")
     }
 }

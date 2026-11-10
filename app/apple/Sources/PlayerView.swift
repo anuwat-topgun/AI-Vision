@@ -190,6 +190,7 @@ struct PipelineControls: View {
             ForEach(LanguageHint.allCases) { Text($0.label).tag($0) }
         }.frame(maxWidth: 150).accessibilityLabel("Subtitle language")
         Toggle("ไทย", isOn: $pipeline.enabled).accessibilityLabel("Thai translation")
+        SubtitleFontMenu()
     }
 }
 

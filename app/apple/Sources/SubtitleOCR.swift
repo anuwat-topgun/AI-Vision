@@ -56,7 +56,7 @@ struct SubtitleOCR {
             }
             .filter { $0.2.height > 0.015 } // ignore tiny UI text
             .sorted { $0.2.minY < $1.2.minY }
-        let lines = Self.subtitleBlock(obs.map { ($0.0, $0.2) })
+        let lines = Self.subtitleBlock(obs.map { ($0.0, $0.2) }, centerX: roi.midX, zoneWidth: roi.width)
         let kept = obs.filter { o in lines.contains { $0 == o.2 } }
         guard !kept.isEmpty else { return nil }
         return Self.result(kept)
@@ -64,7 +64,12 @@ struct SubtitleOCR {
 
     /// Game screens put UI labels ("Auto Play", "Story Logs"…) near the subtitle. Keep only the
     /// subtitle block: lines about as tall as the tallest line and vertically contiguous with it.
-    static func subtitleBlock(_ lines: [(String, CGRect)]) -> [CGRect] {
+    /// Short text off to the side (button labels at the corners, the speaker's name tag) is dropped
+    /// first: subtitles are centered or long, UI labels are short and off-center.
+    static func subtitleBlock(_ all: [(String, CGRect)], centerX: CGFloat = 0.5, zoneWidth: CGFloat = 0.9) -> [CGRect] {
+        let lines = all.filter { l in
+            l.1.width >= zoneWidth * 0.3 || abs(l.1.midX - centerX) <= zoneWidth * 0.12
+        }
         guard let main = lines.max(by: { $0.1.height < $1.1.height }) else { return [] }
         let h = main.1.height
         let sized = lines.map(\.1).filter { $0.height >= h * 0.7 }.sorted { $0.minY < $1.minY }

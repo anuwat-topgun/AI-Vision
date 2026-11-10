@@ -95,6 +95,18 @@ final class SubtitlePipelineTests: XCTestCase {
         XCTAssertEqual(SubtitleOCR.subtitleBlock(lines), [lines[0].1, lines[1].1])
     }
 
+    func testSameSizeCornerLabelsAndNameTagAreDropped() {
+        // Captured game frame: name tag, corner buttons and dialogue all share one small font.
+        let lines: [(String, CGRect)] = [
+            ("Rolan", CGRect(x: 0.25, y: 0.765, width: 0.04, height: 0.022)),
+            ("Autoplay", CGRect(x: 0.06, y: 0.79, width: 0.06, height: 0.022)),
+            ("Story Log", CGRect(x: 0.86, y: 0.79, width: 0.07, height: 0.022)),
+            ("That being said, I can't just leave these people here unprotected.",
+             CGRect(x: 0.27, y: 0.82, width: 0.46, height: 0.022)),
+        ]
+        XCTAssertEqual(SubtitleOCR.subtitleBlock(lines), [lines[3].1])
+    }
+
     func testShownThenClearedWhenTextVanishes() async throws { // AC-011
         let p = SubtitlePipeline()
         p.translator = FakeTranslator()

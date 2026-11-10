@@ -10,7 +10,7 @@
 
 ## [Unreleased] — Live subtitle zone and steadier overlay (2026-11-10)
 - Live Capture: "Subtitle zone" button — drag a box over the video; OCR and translation read only inside it. Saved between sessions; "Reset zone" restores the default bottom band.
-- OCR keeps only the subtitle block (lines as tall as the main line and contiguous with it), so small game UI labels such as "Auto Play" / "Story Logs" are no longer joined into the sentence.
+- OCR keeps only the subtitle block (lines as tall as the main line and contiguous with it), and drops short off-center text (corner buttons, speaker name tag), so game UI labels such as "Autoplay" / "Story Log" are no longer joined into the sentence even when they share the dialogue font size.
 - Overlay no longer blinks: the tracker tolerates 2 missed samples, the Thai stays 0.8 s after the source vanishes, and the previous Thai stays until the next line's translation is ready.
 
 ## [Unreleased] — Live Capture on macOS (E07) (2026-11-10)

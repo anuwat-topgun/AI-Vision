@@ -60,6 +60,7 @@ struct FilePlayerScreen: View {
                 if let engine = model.engine {
                 PlayerSurface(layer: engine.videoLayer)
                     .overlay { SubtitleOverlayView(pipeline: model.pipeline, videoSize: model.videoSize, showDebug: showDebug) }
+                    .overlay(alignment: .top) { noModelBanner }
                     .ignoresSafeArea(edges: fullscreen ? .all : [])
                     .accessibilityLabel("Video")
                     .onTapGesture { withAnimation { fullscreen.toggle() } }
@@ -104,6 +105,28 @@ struct FilePlayerScreen: View {
             if case .success(let url) = result { Task { await model.open(url: url) } }
         }
         .onDisappear { model.close() }
+    }
+
+    /// Actionable prompt instead of a silent "no model" (NFR-009: say what's missing and how to fix it).
+    @ViewBuilder private var noModelBanner: some View {
+        switch models.state {
+        case .none, .failed:
+            HStack(spacing: 10) {
+                Image(systemName: "character.bubble")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ยังไม่ได้เลือกโมเดลแปลภาษา").bold()
+                    if case .failed(let e) = models.state { Text(e).font(.caption) }
+                    else { Text("Choose a .gguf model to translate subtitles to Thai (offline)").font(.caption) }
+                }
+                Button("เลือกโมเดล…") { showModelPicker = true }.buttonStyle(.borderedProminent)
+            }
+            .padding(10).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10)).padding(.top, 12)
+        case .loading(let n):
+            Label("กำลังโหลดโมเดล \(n)…", systemImage: "hourglass")
+                .padding(8).background(.regularMaterial, in: Capsule()).padding(.top, 12)
+        case .ready:
+            EmptyView()
+        }
     }
 
     @ViewBuilder private var modelButton: some View {

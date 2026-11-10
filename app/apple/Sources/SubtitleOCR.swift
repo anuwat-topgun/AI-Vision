@@ -16,6 +16,8 @@ struct OcrResult: Equatable {
     /// [left, top, width, height] normalized to the full frame, top-left origin (schema bbox).
     var bbox: CGRect
     var language: String // "en" | "ja"
+    /// Average colour of the box behind the text (RGB 0–1), when sampled from a pixel buffer.
+    var background: SIMD3<Float>? = nil
 }
 
 struct SubtitleOCR {
@@ -25,7 +27,34 @@ struct SubtitleOCR {
     var hint: LanguageHint = .auto
 
     func recognize(_ pixelBuffer: CVPixelBuffer) throws -> OcrResult? {
-        try recognize(handler: VNImageRequestHandler(cvPixelBuffer: pixelBuffer, options: [:]))
+        guard var r = try recognize(handler: VNImageRequestHandler(cvPixelBuffer: pixelBuffer, options: [:]))
+        else { return nil }
+        r.background = Self.backgroundColor(around: r.bbox, in: CIImage(cvPixelBuffer: pixelBuffer))
+        return r
+    }
+
+    private static let ciContext = CIContext(options: [.workingColorSpace: NSNull()])
+
+    /// Mean colour of thin strips just above and below the text box: the panel behind the subtitle.
+    static func backgroundColor(around box: CGRect, in image: CIImage) -> SIMD3<Float>? {
+        let e = image.extent
+        guard e.width > 0, box.width > 0 else { return nil }
+        let strip = max(2, box.height * e.height * 0.25)
+        // CIImage origin is bottom-left; box is top-left normalized.
+        let x = e.minX + box.minX * e.width, w = box.width * e.width
+        let top = e.maxY - box.minY * e.height, bottom = e.maxY - box.maxY * e.height
+        var sum = SIMD3<Float>(repeating: 0), n: Float = 0
+        for r in [CGRect(x: x, y: top + 1, width: w, height: strip),
+                  CGRect(x: x, y: bottom - 1 - strip, width: w, height: strip)] {
+            let c = r.intersection(e)
+            guard !c.isNull, c.width >= 1, c.height >= 1 else { continue }
+            let avg = image.applyingFilter("CIAreaAverage", parameters: [kCIInputExtentKey: CIVector(cgRect: c)])
+            var px = [UInt8](repeating: 0, count: 4)
+            ciContext.render(avg, toBitmap: &px, rowBytes: 4, bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
+                             format: .RGBA8, colorSpace: nil)
+            sum += SIMD3(Float(px[0]), Float(px[1]), Float(px[2])) / 255; n += 1
+        }
+        return n > 0 ? sum / n : nil
     }
 
     func recognize(_ image: CGImage) throws -> OcrResult? {

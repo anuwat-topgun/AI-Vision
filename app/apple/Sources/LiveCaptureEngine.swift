@@ -55,8 +55,23 @@ final class LiveCaptureEngine: NSObject, ObservableObject {
 
     let session = AVCaptureSession()
     let previewLayer: AVCaptureVideoPreviewLayer
-    let pipeline = SubtitlePipeline()
+    /// One pipeline per subtitle zone; zone 0 is the main dialogue zone.
+    @Published private(set) var pipelines = [SubtitlePipeline()]
+    var pipeline: SubtitlePipeline { pipelines[0] }
     private(set) var coreSession: CoreSession?
+
+    /// Replace the zone list (normalized rects). Keeps the main pipeline's settings on new zones.
+    func setZones(_ rois: [CGRect]) {
+        let rois = rois.isEmpty ? [SubtitleOCR.defaultRoi] : rois
+        while pipelines.count < rois.count {
+            let p = SubtitlePipeline()
+            p.translator = pipeline.translator; p.hint = pipeline.hint; p.enabled = pipeline.enabled
+            if state == .running, let cs = coreSession { p.attach(frames: sink.tap(), session: cs) }
+            pipelines.append(p)
+        }
+        while pipelines.count > rois.count { pipelines.removeLast().detach() }
+        for (p, r) in zip(pipelines, rois) where p.roi != r { p.roi = r }
+    }
     private let sink = CaptureFrameSink()
     private let videoQueue = DispatchQueue(label: "aivision.capture.video", qos: .userInteractive)
     private var selectedDevice: AVCaptureDevice?
@@ -180,7 +195,7 @@ final class LiveCaptureEngine: NSObject, ObservableObject {
         let cs = CoreSession(sourceId: "uvc:\(UUID().uuidString)")
         coreSession = cs
         epoch = cs.epoch()
-        pipeline.attach(frames: sink, session: cs)
+        for p in pipelines { p.attach(frames: sink.tap(), session: cs) }
         state = .running
         fpsTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
@@ -194,7 +209,7 @@ final class LiveCaptureEngine: NSObject, ObservableObject {
 
     func stop() {
         fpsTimer?.invalidate(); fpsTimer = nil
-        pipeline.detach()
+        pipelines.forEach { $0.detach() }
         if session.isRunning { session.stopRunning() }
         session.beginConfiguration()
         session.inputs.forEach { session.removeInput($0) }
@@ -229,7 +244,7 @@ final class LiveCaptureEngine: NSObject, ObservableObject {
         guard let d, d.uniqueID == selectedDevice?.uniqueID, state == .running || state == .starting else { return }
         lastDeviceId = d.uniqueID
         if let cs = coreSession { epoch = cs.bump(reason: .reconnect) }
-        pipeline.invalidate() // never leave a stale Thai line on a frozen frame
+        pipelines.forEach { $0.invalidate() } // never leave a stale Thai line on a frozen frame
         stop()
         state = .disconnected("\(d.localizedName) was disconnected. Reconnect it to continue.")
     }
@@ -256,13 +271,23 @@ final class CaptureFrameSink: NSObject, AVCaptureVideoDataOutputSampleBufferDele
     private let lock = NSLock()
     private var latest: CVPixelBuffer?
     private var taken = true
+    private var seq = 0
     private var frames = 0, dropped = 0
 
     func reset() { lock.lock(); latest = nil; taken = true; frames = 0; dropped = 0; lock.unlock() }
 
+    /// Latest frame and its sequence number (for per-zone taps).
+    func latestFrame() -> (CVPixelBuffer, Int)? {
+        lock.lock(); defer { lock.unlock() }
+        return latest.map { ($0, seq) }
+    }
+
+    /// A FrameSource for one zone: each zone sees every newest frame once, independently.
+    func tap() -> FrameSource { FrameTap(sink: self) }
+
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard let pb = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        lock.lock(); latest = pb; taken = false; frames += 1; lock.unlock()
+        lock.lock(); latest = pb; taken = false; seq += 1; frames += 1; lock.unlock()
     }
 
     func captureOutput(_ output: AVCaptureOutput, didDrop sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
@@ -279,5 +304,16 @@ final class CaptureFrameSink: NSObject, AVCaptureVideoDataOutputSampleBufferDele
     func takeCounts() -> (Int, Int) {
         lock.lock(); defer { frames = 0; dropped = 0; lock.unlock() }
         return (frames, dropped)
+    }
+}
+
+final class FrameTap: FrameSource {
+    private let sink: CaptureFrameSink
+    private var lastSeq = 0
+    init(sink: CaptureFrameSink) { self.sink = sink }
+    func nextFrame() -> CVPixelBuffer? {
+        guard let (pb, n) = sink.latestFrame(), n != lastSeq else { return nil }
+        lastSeq = n
+        return pb
     }
 }

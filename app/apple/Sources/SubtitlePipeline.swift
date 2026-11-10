@@ -61,6 +61,8 @@ final class SubtitlePipeline: ObservableObject {
     @Published var enabled = true { didSet { if !enabled { invalidate() } } }
     @Published var hint: LanguageHint = .auto { didSet { ocr.hint = hint; invalidate() } }
     @Published private(set) var lastOcrBox: CGRect?
+    /// Average colour around the source text (RGB 0–1), for Mask & Replace.
+    @Published private(set) var background: SIMD3<Float>?
     /// OCR zone, normalized top-left origin. Only text inside it is read and translated.
     @Published var roi = SubtitleOCR.defaultRoi { didSet { ocr.roi = roi; invalidate() } }
 
@@ -71,7 +73,7 @@ final class SubtitlePipeline: ObservableObject {
     private var ocr = SubtitleOCR()
     private let tracker = SubtitleTracker(stableSamples: 2, missTolerance: 2, minConfidence: 0.4)
     private let ocrQueue = DispatchQueue(label: "aivision.ocr", qos: .userInitiated)
-    private weak var frames: FrameSource?
+    private var frames: FrameSource? // strong: per-zone taps are owned here
     private var session: CoreSession?
     private var timer: Timer?
     private var ocrInFlight = false
@@ -137,6 +139,7 @@ final class SubtitlePipeline: ObservableObject {
         debug.lastOcrText = r?.text ?? ""
         debug.lastOcrConfidence = r?.confidence ?? 0
         lastOcrBox = r?.bbox
+        if let bg = r?.background { background = bg }
         for ev in tracker.observe(text: r?.text, confidence: r?.confidence ?? 0) {
             switch ev {
             case .vanished(let id):

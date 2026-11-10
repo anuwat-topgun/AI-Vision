@@ -10,7 +10,10 @@ struct LiveCaptureScreen: View {
     @State private var showDebug = false
     @State private var showModelPicker = false
     @State private var editingZone = false
-    private static let zoneKey = "liveSubtitleZone"
+    @State private var zones: [CGRect] = []
+    @State private var selectedZone = 0
+    @AppStorage("liveReplaceMode") private var replaceMode = false
+    private static let zoneKey = "liveSubtitleZones"
 
     var body: some View {
         ZStack {
@@ -19,14 +22,15 @@ struct LiveCaptureScreen: View {
             case .running:
                 PlayerSurface(layer: engine.previewLayer)
                     .overlay {
-                        SubtitleOverlayView(pipeline: engine.pipeline,
-                                            videoSize: CGSize(width: engine.activeFormat?.width ?? 1920,
-                                                              height: engine.activeFormat?.height ?? 1080),
-                                            showDebug: showDebug || editingZone)
+                        ForEach(Array(engine.pipelines.enumerated()), id: \.offset) { i, p in
+                            SubtitleOverlayView(pipeline: p, videoSize: videoSize,
+                                                showDebug: showDebug && i == 0 && !editingZone,
+                                                replace: replaceMode && !editingZone)
+                        }
                     }
                     .overlay {
                         if editingZone {
-                            SubtitleZoneEditor(pipeline: engine.pipeline, videoSize: videoSize)
+                            SubtitleZoneEditor(zones: $zones, selected: $selectedZone, videoSize: videoSize)
                         }
                     }
                     .overlay(alignment: .topTrailing) { if showDebug { captureStats } }
@@ -45,9 +49,14 @@ struct LiveCaptureScreen: View {
             if url.pathExtension.lowercased() == "gguf" { Task { await models.load(url: url) } }
             else { models.reject("\(url.lastPathComponent) is not a .gguf model file") }
         }
-        .onReceive(models.$state) { _ in engine.pipeline.translator = models.translator }
+        .onReceive(models.$state) { _ in engine.pipelines.forEach { $0.translator = models.translator } }
+        .onChange(of: zones) { _, z in engine.setZones(z) }
+        .onReceive(engine.pipeline.$hint) { h in engine.pipelines.dropFirst().forEach { if $0.hint != h { $0.hint = h } } }
+        .onReceive(engine.pipeline.$enabled) { e in engine.pipelines.dropFirst().forEach { if $0.enabled != e { $0.enabled = e } } }
         .onAppear {
-            if let z = SubtitleZoneStore.load(Self.zoneKey) { engine.pipeline.roi = z }
+            zones = SubtitleZoneStore.load(Self.zoneKey)
+            if zones.isEmpty { zones = [SubtitleOCR.defaultRoi] }
+            engine.setZones(zones)
             engine.refreshDevices()
             if deviceId == nil { deviceId = engine.devices.first?.id }
             #if DEBUG
@@ -138,13 +147,22 @@ struct LiveCaptureScreen: View {
             #endif
             Spacer()
             PipelineControls(pipeline: engine.pipeline)
-            Toggle(isOn: $editingZone) { Label("Subtitle zone", systemImage: "rectangle.dashed") }
+            Picker("Display", selection: $replaceMode) {
+                Text("Overlay").tag(false)
+                Text("Replace").tag(true)
+            }
+            .pickerStyle(.segmented).frame(maxWidth: 170).labelsHidden()
+            .help("Replace covers the original subtitle and draws Thai in its place")
+            Toggle(isOn: $editingZone) { Label("Zones (\(zones.count))", systemImage: "rectangle.dashed") }
                 .toggleStyle(.button)
-                .onChange(of: editingZone) { _, on in
-                    if !on { SubtitleZoneStore.save(engine.pipeline.roi, Self.zoneKey) }
-                }
+                .onChange(of: editingZone) { _, on in if !on { SubtitleZoneStore.save(zones, Self.zoneKey) } }
             if editingZone {
-                Button("Reset zone") { engine.pipeline.roi = SubtitleOCR.defaultRoi }
+                Button("Delete zone", systemImage: "trash") {
+                    guard zones.count > 1, zones.indices.contains(selectedZone) else { return }
+                    zones.remove(at: selectedZone); selectedZone = 0
+                }
+                .disabled(zones.count <= 1)
+                Button("Reset") { zones = [SubtitleOCR.defaultRoi]; selectedZone = 0 }
             }
             Toggle("Debug", isOn: $showDebug)
             Text("epoch \(engine.epoch)").font(.caption.monospaced()).foregroundStyle(.secondary)

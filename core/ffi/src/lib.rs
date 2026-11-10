@@ -2,7 +2,10 @@
 //! Keep business logic in `subtitle_core`; this crate only adapts types.
 
 use std::sync::Arc;
+use std::sync::Mutex;
+use subtitle_core::cache::{cache_key, CacheKeyInput};
 use subtitle_core::epoch::{EpochReason, EpochTag, Session};
+use subtitle_core::tracker::{StabilityTracker, TrackerConfig, TrackerEvent};
 
 uniffi::setup_scaffolding!();
 
@@ -58,6 +61,89 @@ impl CoreSession {
     pub fn is_current(&self, source_id: String, epoch: u64) -> bool {
         self.inner.is_current(&EpochTag { source_id, epoch })
     }
+}
+
+#[derive(uniffi::Enum, Debug, PartialEq)]
+pub enum FfiTrackerEvent {
+    Stable { id: u64, text: String },
+    Vanished { id: u64 },
+}
+
+fn map_events(v: Vec<TrackerEvent>) -> Vec<FfiTrackerEvent> {
+    v.into_iter()
+        .filter_map(|e| match e {
+            TrackerEvent::Stable { id, text } => Some(FfiTrackerEvent::Stable { id, text }),
+            TrackerEvent::Vanished { id } => Some(FfiTrackerEvent::Vanished { id }),
+            TrackerEvent::None => None,
+        })
+        .collect()
+}
+
+/// Subtitle stability tracker (core `tracker.rs`) behind an opaque handle.
+#[derive(uniffi::Object)]
+pub struct SubtitleTracker {
+    inner: Mutex<StabilityTracker>,
+}
+
+#[uniffi::export]
+impl SubtitleTracker {
+    #[uniffi::constructor]
+    pub fn new(stable_samples: u32, miss_tolerance: u32, min_confidence: f32) -> Arc<Self> {
+        let cfg = TrackerConfig {
+            stable_samples,
+            miss_tolerance,
+            min_confidence,
+            ..Default::default()
+        };
+        Arc::new(Self {
+            inner: Mutex::new(StabilityTracker::new(cfg)),
+        })
+    }
+    pub fn observe(&self, text: Option<String>, confidence: f32) -> Vec<FfiTrackerEvent> {
+        map_events(
+            self.inner
+                .lock()
+                .unwrap()
+                .observe(text.as_deref(), confidence),
+        )
+    }
+    pub fn reset(&self) -> Vec<FfiTrackerEvent> {
+        map_events(vec![self.inner.lock().unwrap().reset()])
+    }
+    pub fn current_id(&self) -> Option<u64> {
+        self.inner.lock().unwrap().current().map(|(id, _)| id)
+    }
+}
+
+#[derive(uniffi::Record)]
+pub struct FfiCacheKeyInput {
+    pub source_language: String,
+    pub target_language: String,
+    pub model_id: String,
+    pub model_version: String,
+    pub prompt_template_version: String,
+    pub glossary_hash: String,
+    pub normalized_text: String,
+    pub context_hash: String,
+}
+
+#[uniffi::export]
+pub fn translation_cache_key(input: FfiCacheKeyInput) -> String {
+    cache_key(&CacheKeyInput {
+        source_language: &input.source_language,
+        target_language: &input.target_language,
+        model_id: &input.model_id,
+        model_version: &input.model_version,
+        prompt_template_version: &input.prompt_template_version,
+        glossary_hash: &input.glossary_hash,
+        normalized_text: &input.normalized_text,
+        context_hash: &input.context_hash,
+    })
+}
+
+#[uniffi::export]
+pub fn character_error_rate(reference: String, hypothesis: String) -> f32 {
+    subtitle_core::tracker::cer(&reference, &hypothesis)
 }
 
 #[cfg(test)]

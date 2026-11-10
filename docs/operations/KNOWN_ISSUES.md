@@ -15,5 +15,9 @@
 | KI-013 | Android instrumented tests run only locally; CI has no emulator job yet | Medium | OPEN | add emulator CI job or device lab | Android lead |
 | KI-014 | Recent Files (Apple bookmarks / Android persisted URIs) not built yet | Medium | OPEN | E02 follow-up | Client lead |
 | KI-015 | macOS App Sandbox entitlement (user-selected read-only) not set; needed for App Store | Medium | OPEN | decide with D-005 | iOS lead |
+| KI-016 | Thai overlay can linger up to ~0.5 s after the source subtitle disappears (4 Hz sampling + 1-miss tolerance) | Low | OPEN | tune sample rate / tolerance after R0 | Client lead |
+| KI-017 | ROI fixed to bottom 36%: dialogue boxes higher on screen are missed; no ROI editor yet | Medium | OPEN | ROI editor (FR-016, E03) | Client lead |
+| KI-018 | Android has no OCR/translation yet (only playback) | High | OPEN | ML Kit/ONNX OCR + llama.cpp Android | Android lead |
+| KI-019 | Translation quality unreviewed; some awkward/drifting lines with Qwen3-4B | High | OPEN | SPK-02 bake-off + native Thai reviewers | ML lead |
 | KI-012 | Apple builds need a signing team for device install; CI builds unsigned | Low | OPEN | set DEVELOPMENT_TEAM in project.yml | iOS lead |
 | KI-010 | Owners for all roles/decisions D-001..D-009 unassigned | High | OPEN | kickoff assignment (§22.2 step 1) | PM |

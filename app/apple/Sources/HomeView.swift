@@ -20,6 +20,9 @@ struct HomeView: View {
                     .font(.footnote).foregroundStyle(.secondary).padding(8)
             }
             .navigationDestination(isPresented: $showFile) { FilePlayerScreen() }
+            #if DEBUG
+            .onAppear { if DevLaunch.file != nil { showFile = true } }
+            #endif
             .alert(notice ?? "", isPresented: Binding(get: { notice != nil }, set: { if !$0 { notice = nil } })) {}
         }
     }

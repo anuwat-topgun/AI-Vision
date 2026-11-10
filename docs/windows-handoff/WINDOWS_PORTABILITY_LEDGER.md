@@ -93,6 +93,22 @@
 - ADR link: none (implements ADR-0003 within ADR-0006)
 - Status: IMPLEMENTED
 
+### WIN-CHANGE-20261110-005 — OCR + offline translation + Thai overlay (Apple first)
+- Date / author / PR: 2026-11-10 / Claude Code for repo owner / branch feat/e03-e05-ocr-translate-overlay
+- Requirement and AC IDs: FR-004..007, FR-016; AC-005, AC-006, AC-007/008 (macOS), AC-010, AC-011
+- Current decision and motivation: ADR-0007.
+- Changed modules / contracts / formats: core `tracker.rs` (StabilityTracker, similarity, CER); FFI `SubtitleTracker`, `translation_cache_key`, `character_error_rate`; Apple `SubtitleOCR`, `SubtitlePipeline`, `LlamaTranslator`, `ModelStore`, `SubtitleOverlayView`. No schema change.
+- iPadOS/macOS behavior: AVPlayerItemVideoOutput sampled at 4 Hz, latest frame only, OCR on background queue; translation single-flight on a private llama queue; overlay accepted only if epoch and subtitle id still current.
+- Android behavior: not implemented yet — needs ML Kit/ONNX OCR adapter and llama.cpp (Android build) or ONNX MT; the Rust tracker/cache key are already shared.
+- Windows future equivalent and required adapter: OCR = Windows.Media.Ocr or ONNX OCR (WIN-004); translation = llama.cpp Windows build (CPU/Vulkan/CUDA) with the same GGUF and prompt (WIN-005); frame tap from Media Foundation sample grabber; overlay in WinUI. Reuse `SubtitleTracker` via C# bindings.
+- Compatibility/ABI/API/schema implications: FFI additions only (CORE_API_VERSION stays 1, additive).
+- Dependency and licensing impact: llama.cpp b11811 (MIT, supports Windows); Qwen3-4B GGUF (Apache-2.0) user-supplied.
+- Risks/unknowns and experiment needed: Japanese quality/latency on tablets; Windows GPU backends; Vision has no Windows equivalent with identical accuracy.
+- Windows tasks with priority, owner and due milestone: WIN-004/005 spike with same fixtures + CER/latency report (P1, ML Lead, before R5).
+- Tests / fixtures / evidence: XCTest 10/10 incl. model tests; core tracker tests 5/5.
+- ADR link: ADR-0007
+- Status: IMPLEMENTED (Apple), OPEN (Android, Windows)
+
 ## Change entry template (append, do not overwrite)
 
 ```markdown

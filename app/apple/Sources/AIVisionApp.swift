@@ -2,7 +2,8 @@ import SwiftUI
 
 @main
 struct AIVisionApp: App {
+    @StateObject private var models = ModelStore()
     var body: some Scene {
-        WindowGroup { HomeView() }
+        WindowGroup { HomeView().environmentObject(models) }
     }
 }

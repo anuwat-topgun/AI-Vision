@@ -8,6 +8,9 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — OCR + offline Thai translation on macOS/iPadOS (2026-11-10)
+- Video File mode reads EN/JA burned-in subtitles (Apple Vision), translates offline with a user-imported GGUF model via llama.cpp, and shows Thai above the original. Debug overlay (ROI, box, timings, model). Rust stability tracker + CER shared via FFI. ADR-0007, ledger WIN-CHANGE-20261110-005, BENCH-20261110-001.
+
 ## [Unreleased] — E02 File playback (2026-11-10)
 - Video File screen on iPadOS/macOS (AVPlayer) and Android (Media3): system file picker, play/pause, exact seek, ±10 s, speed 0.5–2×, volume/mute, fullscreen; seek bumps core epoch; clear errors for unsupported/DRM/damaged files. Tests run against golden fixtures. Ledger WIN-CHANGE-20261110-004.
 

@@ -5,6 +5,7 @@ pub mod cache;
 pub mod contracts;
 pub mod epoch;
 pub mod fsm;
+pub mod tracker;
 
 /// FFI/ABI version exposed to Dart and native adapters (README §4.2, NFR-008).
 pub const CORE_API_VERSION: u32 = 1;

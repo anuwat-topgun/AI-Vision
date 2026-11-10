@@ -15,3 +15,4 @@ app/android/build/
 app/android/app/build/
 app/android/app/src/main/jniLibs/
 app/android/local.properties
+fixtures/tools/fonts/*.ttf

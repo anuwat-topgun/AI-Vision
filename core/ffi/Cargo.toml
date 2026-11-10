@@ -1,0 +1,23 @@
+[package]
+name = "subtitle_ffi"
+version = "0.1.0"
+edition = "2021"
+description = "UniFFI bindings over subtitle_core for Swift (Apple) and Kotlin (Android); C# later for Windows (ADR-0006)"
+license = "UNLICENSED"
+publish = false
+
+[lib]
+crate-type = ["lib", "staticlib", "cdylib"]
+name = "subtitle_ffi"
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+required-features = ["cli"]
+
+[features]
+cli = ["uniffi/cli"]
+
+[dependencies]
+subtitle_core = { path = "../rust" }
+uniffi = "0.28"

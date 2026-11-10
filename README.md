@@ -1,6 +1,7 @@
-# AI Game Subtitle Translator — Engineering Handoff v2.0
+# AI Game Subtitle Translator — Engineering Handoff v2.1
 
 **Status:** Proposed implementation baseline, not an implemented product  
+**v2.1 (2026-11-10):** UI changed from Flutter to native per-platform UI (SwiftUI / Jetpack Compose; WinUI later) over the Rust core via UniFFI — see ADR-0006.  
 **Date:** 2026-11-10  
 **Initial target:** iPadOS (iPad), macOS, Android tablets. **Windows:** deferred, preserved as a required future target.  
 **Languages:** English/Japanese spoken-screen text → Thai  
@@ -160,7 +161,7 @@ Many console/PC games lack Thai subtitles. Users want to watch or play games wit
 
 ```mermaid
 flowchart TD
-  A[Flutter adaptive UI] --> B[App Controller and State]
+  A[Native UI: SwiftUI / Compose / WinUI later] --> B[App Controller and State]
   B --> C[Rust shared core via versioned FFI]
   C --> D[InputProvider contract]
   D --> E[File Adapter]
@@ -181,14 +182,14 @@ flowchart TD
 
 ### 4.1 Recommended implementation boundaries
 
-- **Flutter/Dart**: adaptive app shell, navigation, onboarding, profile settings, test dashboards, UI accessibility. **Do not copy 60fps raw video frames across Dart boundary**; use native textures/platform view or equivalent high-performance surface bridge.
+- **Native UI (ADR-0006)**: SwiftUI app shared by iPadOS+macOS (`app/apple`), Kotlin + Jetpack Compose for Android tablets (`app/android`), WinUI/C# for Windows in R5. Navigation, onboarding, settings, dashboards, accessibility. **Do not copy 60fps raw video frames across the FFI boundary**; video stays in native surfaces (Metal layer / SurfaceView / swapchain).
 - **Rust shared core**: source/session orchestration, event timeline, subtitle FSM, cache keys, glossary, translation provider interface, cancellation/epoch, typed errors, metrics schema. Do not bind this logic to Apple/Android APIs.
 - **Swift/Obj-C++ platform media modules**: iPadOS/macOS AVFoundation device discovery, AVPlayer/AVAsset, audio session and Metal/texture bridge. For iPadOS UVC discover supported external `AVCaptureDevice`; no guarantee all devices expose all modes.
 - **Kotlin/C++ Android modules**: Camera2 external camera where enumerated OR vetted user-permission USB-host UVC stack; Media3/ExoPlayer for files; Surface/HardwareBuffer/EGL/Vulkan integration as appropriate.
 - **AI delegates**: native runtime selected by device: Core ML/Metal where supported; ONNX Runtime/NNAPI/vendor accelerator or llama.cpp; Rust core interfaces only receive normalized text/tokens and confidence, not platform model handles.
 - **Windows future adapters**: Media Foundation/Windows Graphics Capture, Direct3D compositor, Credential Manager/DPAPI storage, Windows packaging; no Windows-only implementation committed yet.
 
-**Architecture decision:** Flutter+Rust is *proposed*, not guaranteed final. During R0 compare feasibility, binary size, FFI overhead, platform texture accessibility, platform store restrictions, and debugging complexity. Write ADR if changed.
+**Architecture decision:** Native UI + Rust core via UniFFI (ADR-0006, supersedes ADR-0004). During R0 still measure binary size, FFI overhead and GPU contention; write ADR if changed.
 
 ### 4.2 Shared interface contracts
 
@@ -228,7 +229,7 @@ pub trait RenderOutputAdapter: Send {
 }
 ```
 
-The pseudocode above is normative for **semantics**, not compiled source: implement async frame callbacks, native texture handles/fences, ownership/lifetime, cancellation and backpressure explicitly. FFI shall expose opaque handles, API version and error codes rather than Rust pointer layout to Dart.
+The pseudocode above is normative for **semantics**, not compiled source: implement async frame callbacks, native texture handles/fences, ownership/lifetime, cancellation and backpressure explicitly. FFI shall expose opaque handles, API version and error codes rather than Rust pointer layout to Swift/Kotlin (UniFFI-generated bindings).
 
 ### 4.3 Event/time model
 
@@ -427,7 +428,7 @@ Model scorecard per platform: model id+version+license; installed bytes; loaded 
 - Apple (iPadOS/macOS): Keychain Services with appropriate accessibility/access group.
 - Android: Android Keystore-backed encryption and app-private storage; require explicit secure-storage failure handling.
 - Windows future: Credential Manager or DPAPI-backed storage (do not invent platform-agnostic key store API).
-- No API key in Flutter state persistence, SQLite/plaintext logs, analytics, crash reports, URL query string, shared clipboard automatically, or build settings.
+- No API key in UI state persistence (SwiftUI/Compose saved state), SQLite/plaintext logs, analytics, crash reports, URL query string, shared clipboard automatically, or build settings.
 - Credentials only go to explicitly user-confirmed provider endpoint, through native request layer, with HTTPS verification. No user-entered custom HTTP endpoints in MVP.
 - If provider prohibits exposed API key use from distributed native clients, do not implement unsupported direct-key pathway; use supported OAuth/token flow or user-managed proxy only after explicit design/legal review.
 
@@ -784,7 +785,7 @@ For heavy AI or low-tier devices, define **separate advertised compatibility cla
 
 | Epic | Work packages | Dependency | Deliverables |
 |---|---|---|---|
-| E01 Foundation | monorepo, Flutter shell, Rust core, FFI, CI, schema/versioning | none | build on iPadOS/macOS/Android; shared core test harness |
+| E01 Foundation | monorepo, native SwiftUI/Compose shells, Rust core, UniFFI, CI, schema/versioning | none | build on iPadOS/macOS/Android; shared core test harness |
 | E02 File Playback | Apple AVPlayer/AVFoundation, Android Media3, timeline, audio, native texture | E01 | permanent video file app screen + automated fixtures |
 | E03 OCR | ROI UI, detector/recognizer adapters, normalization, tracking, metrics | E02 | EN/JA OCR benchmark + editable ROI |
 | E04 Local AI | model runtime benchmarks, model manager, Thai translation context, glossary | E01/E03 | offline EN/JA→TH at target device tiers |
@@ -805,7 +806,7 @@ For each ticket include: `User story`, `Technical approach`, `Platform(s)`, `Dep
 
 - **SPK-01:** Run UVC live capture on 2 iPads/1 Mac/2 Android devices; save negotiated format and measured delay.
 - **SPK-02:** Benchmark local translation EN→TH and JA→TH across candidate models/quantization; generate decision scorecard and model license review.
-- **SPK-03:** Benchmark native rendering + Flutter texture handoff while OCR+LLM share GPU/CPU.
+- **SPK-03:** Benchmark native rendering (Metal/SurfaceView) while OCR+LLM share GPU/CPU.
 - **SPK-04:** Test USB hub input+external TV+charging simultaneous on each tablet; document unsupported combinations.
 - **SPK-05:** App Store model download/distribution and BYOK provider compliance review.
 
@@ -817,9 +818,11 @@ For each ticket include: `User story`, `Technical approach`, `Platform(s)`, `Dep
 
 ```text
 app/
-  flutter_ui/                # adaptive app screens; Dart state; assets
+  apple/                     # SwiftUI app (iPadOS + macOS), XcodeGen project.yml
+  android/                   # Kotlin + Jetpack Compose app (Gradle)
 core/
   rust/                      # subtitle FSM, time, scheduling, contracts, cache
+  ffi/                       # UniFFI bindings (Swift, Kotlin; C# later)
 platform/
   apple/                     # Swift AVFoundation/Core ML/Keychain/Metal
   android/                   # Kotlin Camera2, USB Host, Media3, Keystore
@@ -845,7 +848,7 @@ scripts/
 
 ### 18.2 CI jobs
 
-- PR: fmt/lint Rust/Flutter/Swift/Kotlin; unit tests; dependency and secret scanning; JSON schema checks; size checks; cross-platform interface tests.
+- PR: fmt/lint Rust/Swift/Kotlin; unit tests; dependency and secret scanning; JSON schema checks; size checks; cross-platform interface tests.
 - macOS build agent: iPadOS and macOS app compile/sign staging where permitted; native Apple tests with device farm/manual QA for USB hardware.
 - Android build agent: AAB/APK compile; emulator file playback tests + real UVC device lab runs.
 - Windows port readiness: periodic shared Rust core `x86_64-pc-windows-msvc` cross-check on Windows runner for pure core; no forced Windows UI implementation.
@@ -876,7 +879,7 @@ scripts/
 ### 19.1 Invariants to enforce from first commit
 
 1. Rust `core` compiles without Apple/Android SDK imports; isolate feature flags/platform bindings.
-2. Flutter UI never assumes touch-only or Apple-only navigation; keyboard/mouse/large-screen behavior recorded.
+2. Each native UI keeps the same screen inventory and behavior (§11); never assume touch-only navigation; keyboard/mouse/large-screen behavior recorded.
 3. Raw frames exchange native opaque texture/surface handles with platform adapter; no core dependency on `CVPixelBuffer`, `SurfaceTexture`, `AHardwareBuffer`, `Metal` etc.
 4. Frame/clock/ROI/translation/metrics schemas use common types, little assumptions about encoding; serialization and ABI versioned.
 5. Secure credential API abstract (`SecretStore`) with iPad/macOS Keychain, Android Keystore, Windows future Credential Manager/DPAPI.
@@ -905,7 +908,7 @@ If legitimately no impact: PR template must state `Windows impact: NONE` + one-s
 | Subsystem | Initial status | Windows implementation reference |
 |---|---|---|
 | Rust core/contracts | DESIGN / test-ready | compile test x64 MSVC |
-| Flutter app shell | DESIGN / adaptable | Flutter Windows desktop |
+| Native app shell | SwiftUI + Compose shells exist | WinUI 3 / C# over UniFFI-C# bindings |
 | File Video | Deferred adapter | Media Foundation or reviewed alternative |
 | UVC capture | Deferred adapter | Media Foundation video capture |
 | OCR runtime | Portable contract | ONNX CPU/DirectML or justified runtime |
@@ -937,7 +940,7 @@ If legitimately no impact: PR template must state `Windows impact: NONE` + one-s
 
 - D-001 Model selection: need measured EN/JA→TH scorecard before freeze. Owner: ML Lead.
 - D-002 Android UVC route: Camera2 external vs audited USB Host implementation; requires device test. Owner: Android Lead.
-- D-003 Flutter texture bridge strategy vs native player surface. Owner: Client Tech Lead.
+- D-003 Native video surface strategy per platform (resolved direction by ADR-0006; details at R0). Owner: Client Tech Lead.
 - D-004 iPad external TV simultaneous dock viability and supported models. Owner: iOS Lead + QA.
 - D-005 macOS distribution: App Store vs direct signed app; legal/commercial review. Owner: Product/Legal.
 - D-006 Cloud BYOK supported authentication strategy by provider. Owner: Security Lead.
@@ -978,7 +981,7 @@ If legitimately no impact: PR template must state `Windows impact: NONE` + one-s
 
 1. Establish owners: PM, iPadOS/macOS, Android, Rust core, ML/OCR, QA, Security/Legal.
 2. Copy handoff docs into repo; agree versioning and branch policy.
-3. Implement skeleton core contracts + Flutter shell with File Input tile and stubbed adapters.
+3. Implement skeleton core contracts + native UI shells with File Input tile and stubbed adapters.
 4. Add test media fixture manifest and self-created H.264/MP4 English+Japanese scenes.
 5. Build R0 capture+render+model benchmark on actual devices, recording failed attempts too.
 6. Publish initial ADRs and device compatibility list; update Windows ledger for every decision.
@@ -1012,8 +1015,9 @@ These links are engineering research starting points; re-check latest SDK/API/re
 - Android AOSP external USB cameras: https://source.android.com/docs/core/camera/external-usb-cameras
 - Android USB Host: https://developer.android.com/develop/connectivity/usb/host
 - Android Media3 ExoPlayer: https://developer.android.com/media/media3/exoplayer
-- Flutter supported deployment platforms: https://docs.flutter.dev/reference/supported-platforms
-- Flutter platform integration: https://docs.flutter.dev/platform-integration
+- UniFFI user guide: https://mozilla.github.io/uniffi-rs/
+- Jetpack Compose: https://developer.android.com/compose
+- SwiftUI: https://developer.apple.com/documentation/swiftui
 - Android camera API: https://developer.android.com/media/camera/camera2
 
 ---

@@ -10,14 +10,14 @@
 |---|---|---|---|---|
 | WIN-001 | File video decode/player | Media Foundation / reviewed cross-platform media engine | codec availability/MKV | MP4 1080p60 seek/audio tests |
 | WIN-002 | Live UVC | Media Foundation device enumeration and capture | negotiated formats/USB quirks | same UVC test kit |
-| WIN-003 | Video composition | Direct3D native texture path | frame sharing and swapchain vs Flutter | no frame copies on Dart thread |
+| WIN-003 | Video composition | Direct3D native texture path | swapchain integration with WinUI (ADR-0006) | no frame copies across FFI |
 | WIN-004 | OCR | portable ONNX OCR backend | model binary and acceleration | EN/JA golden corpus |
 | WIN-005 | Offline AI | Windows local runtime, possible ONNX DirectML/CPU/GPU | memory/driver model packaging | same Thai evaluation fixtures |
 | WIN-006 | Secure secrets | Windows Credential Manager / DPAPI-backed store | key lifecycle | no plaintext artifact tests |
 | WIN-007 | Local files | Windows picker + safe identity/permissions | filesystem assumptions | seek/reopen fixtures |
 | WIN-008 | TV | Windows display management + audio routing | HDR/audio/display timing | processed video to secondary display |
 | WIN-009 | Packaging | code-signed installer/updater | signing/version | install/uninstall/rollback |
-| WIN-010 | UI | Flutter Windows mouse/keyboard | touch assumptions | accessibility/fullscreen |
+| WIN-010 | UI | WinUI 3 / C# native UI over UniFFI C# bindings (ADR-0006) | third UI codebase; C# binding generator maturity | same §11 screen inventory, accessibility/fullscreen |
 
 ## Initial impact baseline: 2026-11-10
 
@@ -43,6 +43,22 @@
 - Windows tasks with priority, owner and due milestone: keep `windows-latest` core job green (P1, Architecture Lead, every PR).
 - Tests / fixtures / evidence: `cargo test` 9/9 pass locally on macOS arm64 (seek-race stale drop, source-switch stale, FSM, schema round-trip, cache key).
 - ADR link: ADR-0005
+- Status: IMPLEMENTED
+
+### WIN-CHANGE-20261110-002 — Native UI per platform (supersedes Flutter)
+- Date / author / PR: 2026-11-10 / Claude Code for repo owner / branch feat/native-ui-adr-0006
+- Requirement and AC IDs: FR-010, NFR-004, NFR-008, AC-004, AC-021
+- Current decision and motivation: product owner chose native UI; ADR-0006.
+- Changed modules / contracts / formats: removed `app/flutter_ui`; added `app/apple` (SwiftUI), `app/android` (Compose), `core/ffi` (UniFFI), cargo workspace `core/Cargo.toml`, build scripts `scripts/build_apple_core.sh`, `scripts/build_android_core.sh`. Core contracts/schemas unchanged.
+- iPadOS/macOS behavior: one SwiftUI target, links `SubtitleFFI.xcframework` (static lib).
+- Android behavior: Compose app, loads `libsubtitle_ffi.so` through JNA.
+- Windows future equivalent and required adapter: WinUI 3 app in C#; generate C# bindings for `core/ffi` (third-party uniffi-bindgen-cs, evaluate at R5) or a thin C ABI. Replaces previous "Flutter Windows desktop" plan.
+- Compatibility/ABI/API/schema implications: FFI surface `core_api_version()`, `CoreSession` (epoch bump / is_current). No schema change.
+- Dependency and licensing impact: uniffi 0.28 (MPL-2.0), JNA 5.17 (Apache-2.0/LGPL). Both usable on Windows.
+- Risks/unknowns and experiment needed: C# binding generator maturity; 3 UI codebases at R5.
+- Windows tasks with priority, owner and due milestone: P2 spike "C# bindings for core/ffi" before R5 — Architecture Lead.
+- Tests / fixtures / evidence: `cargo test --workspace` (incl. windows-latest CI), macOS XCTest via FFI, Android assembleDebug.
+- ADR link: ADR-0006
 - Status: IMPLEMENTED
 
 ## Change entry template (append, do not overwrite)

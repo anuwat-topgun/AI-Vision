@@ -8,6 +8,11 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — Translation prompt p2 (2026-11-10)
+- Prompt p1 → p2 (Natural Thai Game Localization) per `docs/translation/PROMPT_P2_SPEC.md`; canonical prompts and translation contract moved into Rust core. Typed results: `???`/invalid/timeout never shown. Session history deduped and cleared on seek/new file. Cache keys versioned by prompt/model/history. KV prefix reuse (p2 P50 231 ms on M4 Max).
+- Fixes: crash when prompt exceeded 512 tokens; "AIVision quit unexpectedly" on quit with a model loaded.
+- ADR-0009, ledger WIN-CHANGE-20261110-007, evaluation in `docs/translation/PROMPT_EVALUATION.md`.
+
 ## [Unreleased] — Model auto-load (2026-11-10)
 - App loads the last-used model at launch; if none, picks up a local `.gguf` from `~/Models` (macOS, disk only, no download). A banner over the video says when no model is loaded, with a "เลือกโมเดล…" button. Windows impact: NONE beyond UI convenience (WIN-010 UI will need the same prompt).
 

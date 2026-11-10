@@ -85,6 +85,17 @@ Do not delete or rewrite adopted decisions silently. For each material change ad
 - Validation evidence: XCTest 14/14 incl. MKV open/seek/size, OCR on VLC frames paused (CER 0) and during playback (all 3 lines, no wrong reads), MP4 still on AVFoundation; live app screenshot of JA MKV with Thai overlay.
 - Related FR/AC: FR-001, FR-002; AC-002, AC-033.
 
+## ADR-0009 — Translation prompt p2 and shared translation contract in core
+- Date: 2026-11-10
+- Status: ACCEPTED for dev; quality gate (spec §10.2 human review) pending
+- Context: `docs/translation/PROMPT_P2_SPEC.md` (product handoff).
+- Decision: Canonical prompts live in `core/prompts/*.txt` and are served by Rust (`translation.rs`) together with input sanitizer (NFC, `<>` strip, 500 graphemes), app-built user turn, typed output parser (`Translated`/`Unreadable`/`Invalid`), session history (≤3, deduped) and versioned cache identity. Platforms only run inference. Default `p2`; rollback via `promptVersion` = `p1`.
+- Deviation from spec §4.1: the current user turn adds one line restating the task, because the spec format alone let p2 obey an injected command (TR-P2-007). Documented in PROMPT_EVALUATION.md.
+- Performance: KV prefix reuse in `LlamaTranslator` (keep shared tokens, decode only the tail) — p2 P50 231 ms / P95 297 ms on M4 Max vs ~600–850 ms without.
+- Stability fixes found while testing p2: prompt > n_batch aborted the process (now chunked prefill + context guard); ggml aborted on app quit while Metal residency sets were alive (now model freed on willTerminate, quit-during-load guarded, residency sets disabled).
+- Windows impact: WIN-CHANGE-20261110-007.
+- Related FR/AC: FR-005, FR-007; AC-007/008 (macOS), AC-010, AC-011.
+
 ## New ADR template
 
 ```markdown

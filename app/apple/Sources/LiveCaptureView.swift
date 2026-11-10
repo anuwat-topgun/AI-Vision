@@ -9,6 +9,8 @@ struct LiveCaptureScreen: View {
     @State private var audioId: String?  // nil = no audio
     @State private var showDebug = false
     @State private var showModelPicker = false
+    @State private var editingZone = false
+    private static let zoneKey = "liveSubtitleZone"
 
     var body: some View {
         ZStack {
@@ -20,7 +22,12 @@ struct LiveCaptureScreen: View {
                         SubtitleOverlayView(pipeline: engine.pipeline,
                                             videoSize: CGSize(width: engine.activeFormat?.width ?? 1920,
                                                               height: engine.activeFormat?.height ?? 1080),
-                                            showDebug: showDebug)
+                                            showDebug: showDebug || editingZone)
+                    }
+                    .overlay {
+                        if editingZone {
+                            SubtitleZoneEditor(pipeline: engine.pipeline, videoSize: videoSize)
+                        }
                     }
                     .overlay(alignment: .topTrailing) { if showDebug { captureStats } }
                     .accessibilityLabel("Live video")
@@ -40,6 +47,7 @@ struct LiveCaptureScreen: View {
         }
         .onReceive(models.$state) { _ in engine.pipeline.translator = models.translator }
         .onAppear {
+            if let z = SubtitleZoneStore.load(Self.zoneKey) { engine.pipeline.roi = z }
             engine.refreshDevices()
             if deviceId == nil { deviceId = engine.devices.first?.id }
             #if DEBUG
@@ -130,12 +138,24 @@ struct LiveCaptureScreen: View {
             #endif
             Spacer()
             PipelineControls(pipeline: engine.pipeline)
+            Toggle(isOn: $editingZone) { Label("Subtitle zone", systemImage: "rectangle.dashed") }
+                .toggleStyle(.button)
+                .onChange(of: editingZone) { _, on in
+                    if !on { SubtitleZoneStore.save(engine.pipeline.roi, Self.zoneKey) }
+                }
+            if editingZone {
+                Button("Reset zone") { engine.pipeline.roi = SubtitleOCR.defaultRoi }
+            }
             Toggle("Debug", isOn: $showDebug)
             Text("epoch \(engine.epoch)").font(.caption.monospaced()).foregroundStyle(.secondary)
         }
         .buttonStyle(.borderless)
         .padding()
         .background(.bar)
+    }
+
+    private var videoSize: CGSize {
+        CGSize(width: engine.activeFormat?.width ?? 1920, height: engine.activeFormat?.height ?? 1080)
     }
 
     private var captureStats: some View {

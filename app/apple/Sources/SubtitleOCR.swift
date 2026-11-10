@@ -20,7 +20,8 @@ struct OcrResult: Equatable {
 
 struct SubtitleOCR {
     /// Region of interest, normalized, top-left origin. Default = bottom band (BOTTOM_REGION, §6.2).
-    var roi = CGRect(x: 0.05, y: 0.62, width: 0.90, height: 0.36)
+    static let defaultRoi = CGRect(x: 0.05, y: 0.62, width: 0.90, height: 0.36)
+    var roi = SubtitleOCR.defaultRoi
     var hint: LanguageHint = .auto
 
     func recognize(_ pixelBuffer: CVPixelBuffer) throws -> OcrResult? {
@@ -55,11 +56,32 @@ struct SubtitleOCR {
             }
             .filter { $0.2.height > 0.015 } // ignore tiny UI text
             .sorted { $0.2.minY < $1.2.minY }
-        guard !obs.isEmpty else { return nil }
-        let text = Self.joinLines(obs.map(\.0))
+        let lines = Self.subtitleBlock(obs.map { ($0.0, $0.2) })
+        let kept = obs.filter { o in lines.contains { $0 == o.2 } }
+        guard !kept.isEmpty else { return nil }
+        return Self.result(kept)
+    }
+
+    /// Game screens put UI labels ("Auto Play", "Story Logs"…) near the subtitle. Keep only the
+    /// subtitle block: lines about as tall as the tallest line and vertically contiguous with it.
+    static func subtitleBlock(_ lines: [(String, CGRect)]) -> [CGRect] {
+        guard let main = lines.max(by: { $0.1.height < $1.1.height }) else { return [] }
+        let h = main.1.height
+        let sized = lines.map(\.1).filter { $0.height >= h * 0.7 }.sorted { $0.minY < $1.minY }
+        guard let start = sized.firstIndex(of: main.1) else { return [main.1] }
+        var block = [main.1]
+        var i = start - 1
+        while i >= 0, block[0].minY - sized[i].maxY < h * 0.9 { block.insert(sized[i], at: 0); i -= 1 }
+        i = start + 1
+        while i < sized.count, sized[i].minY - block.last!.maxY < h * 0.9 { block.append(sized[i]); i += 1 }
+        return block
+    }
+
+    private static func result(_ obs: [(String, Float, CGRect)]) -> OcrResult {
+        let text = joinLines(obs.map(\.0))
         let conf = obs.map(\.1).reduce(0, +) / Float(obs.count)
         let box = obs.dropFirst().reduce(obs[0].2) { $0.union($1.2) }
-        return OcrResult(text: text, confidence: conf, bbox: box, language: Self.detectLanguage(text))
+        return OcrResult(text: text, confidence: conf, bbox: box, language: detectLanguage(text))
     }
 
     /// Japanese lines join without spaces; Latin lines with one space (§6.1 step 6).

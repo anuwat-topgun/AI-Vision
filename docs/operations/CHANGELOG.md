@@ -8,6 +8,11 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — Live subtitle zone and steadier overlay (2026-11-10)
+- Live Capture: "Subtitle zone" button — drag a box over the video; OCR and translation read only inside it. Saved between sessions; "Reset zone" restores the default bottom band.
+- OCR keeps only the subtitle block (lines as tall as the main line and contiguous with it), so small game UI labels such as "Auto Play" / "Story Logs" are no longer joined into the sentence.
+- Overlay no longer blinks: the tracker tolerates 2 missed samples, the Thai stays 0.8 s after the source vanishes, and the previous Thai stays until the next line's translation is ready.
+
 ## [Unreleased] — Live Capture on macOS (E07) (2026-11-10)
 - Live Capture screen: pick a UVC capture device and format (Auto prefers 1080p60), optional capture-card audio, live preview with the Thai subtitle pipeline, capture fps/dropped frames in Debug. Unplug clears subtitles and waits; replugging the same device resumes. Ledger WIN-CHANGE-20261110-008.
 

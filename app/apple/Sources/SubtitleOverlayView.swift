@@ -61,8 +61,8 @@ struct SubtitleOverlayView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text("OCR \(Int(d.ocrMs)) ms · conf \(d.lastOcrConfidence, specifier: "%.2f")")
             Text("src: \(d.lastOcrText.isEmpty ? "—" : d.lastOcrText)").lineLimit(2)
-            Text("translate \(Int(d.translateMs)) ms · done \(d.translations) · cache \(d.cacheHits) · stale \(d.staleDropped)")
-            Text("model: \(pipeline.translator?.modelId ?? "none")")
+            Text("translate \(Int(d.translateMs)) ms · done \(d.translations) · cache \(d.cacheHits) · stale \(d.staleDropped) · ??? \(d.unreadable) · invalid \(d.invalid)")
+            Text("model: \(pipeline.translator?.modelId ?? "none") · prompt \(pipeline.translator?.promptVersion ?? "-")")
         }
         .font(.caption.monospaced()).foregroundStyle(.white)
         .padding(6).background(.black.opacity(0.6), in: RoundedRectangle(cornerRadius: 6))

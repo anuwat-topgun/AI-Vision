@@ -22,5 +22,8 @@
 | KI-020 | MKV not supported on iPadOS (needs MobileVLCKit, ~264 MB) | Medium | OPEN | decide after store/legal review | iOS lead |
 | KI-021 | LGPL-2.1 (VLCKit) obligations: attribution + source offer in Help/Legal, relinking; App Store compatibility unreviewed | High | OPEN | legal review before release | Legal lead |
 | KI-022 | VLC A/V sync with our display layer not measured | Medium | OPEN | sync fixture test | QA lead |
+| KI-023 | p2 still adds ครับ on ありがとうございます and renders "Leave it to me!" literally (Qwen3-4B) | Medium | OPEN | few-shot examples or larger model; §10.2 human eval | ML lead |
+| KI-024 | Spec §10.2 human evaluation (200 EN + 200 JA, blinded Thai reviewers) not done; only N=12 smoke | High | OPEN | build licensed bilingual fixture set | QA lead |
+| KI-025 | Metal residency sets disabled to avoid ggml exit abort; measure any perf impact on iPad | Low | OPEN | iPad benchmark | iOS lead |
 | KI-012 | Apple builds need a signing team for device install; CI builds unsigned | Low | OPEN | set DEVELOPMENT_TEAM in project.yml | iOS lead |
 | KI-010 | Owners for all roles/decisions D-001..D-009 unassigned | High | OPEN | kickoff assignment (§22.2 step 1) | PM |

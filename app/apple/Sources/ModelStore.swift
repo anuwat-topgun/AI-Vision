@@ -9,10 +9,33 @@ final class ModelStore: ObservableObject {
     @Published private(set) var state: State = .none
     private(set) var translator: LlamaTranslator?
     private let bookmarkKey = "llamaModelBookmark"
+    private var terminateObserver: NSObjectProtocol?
+
+    init() {
+        #if os(macOS)
+        let name = NSApplication.willTerminateNotification
+        #else
+        let name = UIApplication.willTerminateNotification
+        #endif
+        terminateObserver = NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.terminating = true; self?.unload() }
+        }
+    }
+
+    /// Release the model (app quit, or before loading another one).
+    private var terminating = false
+
+    func unload() {
+        translator?.shutdown()
+        translator = nil
+        if case .ready = state { state = .none }
+    }
 
     /// Reload the last chosen model; otherwise pick up a local GGUF from ~/Models (macOS).
     /// Local disk only — never downloads.
     func restore() async {
+        // The XCTest host is this app; tests load their own model and end via exit().
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
         guard translator == nil, !isLoading else { return }
         if let data = UserDefaults.standard.data(forKey: bookmarkKey) {
             var stale = false
@@ -44,11 +67,14 @@ final class ModelStore: ObservableObject {
 
     func load(url: URL, remember: Bool = true) async {
         let name = url.deletingPathExtension().lastPathComponent
+        unload() // free the previous model first: never hold two in memory
         state = .loading(name)
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
         do {
-            translator = try await LlamaTranslator.load(url: url)
+            let loaded = try await LlamaTranslator.load(url: url)
+            if terminating { loaded.shutdown(); return } // app quit while loading
+            translator = loaded
             state = .ready(name)
             if remember, let data = try? url.bookmarkData(options: Self.bookmarkCreate) {
                 UserDefaults.standard.set(data, forKey: bookmarkKey)

@@ -146,6 +146,155 @@ pub fn character_error_rate(reference: String, hypothesis: String) -> f32 {
     subtitle_core::tracker::cer(&reference, &hypothesis)
 }
 
+// ---- Translation contract (Prompt p2 spec) ----
+use subtitle_core::translation as tr;
+
+#[derive(uniffi::Enum, Clone, Copy)]
+pub enum FfiSourceLanguage {
+    English,
+    Japanese,
+}
+impl From<FfiSourceLanguage> for tr::SourceLanguage {
+    fn from(l: FfiSourceLanguage) -> Self {
+        match l {
+            FfiSourceLanguage::English => tr::SourceLanguage::English,
+            FfiSourceLanguage::Japanese => tr::SourceLanguage::Japanese,
+        }
+    }
+}
+
+#[derive(uniffi::Enum, Debug, PartialEq)]
+pub enum FfiSanitized {
+    Ok { text: String, truncated: bool },
+    Reject,
+}
+
+#[derive(uniffi::Enum, Debug, PartialEq)]
+pub enum FfiParsedTranslation {
+    Translated { text: String },
+    Unreadable,
+    Invalid { reason: String },
+}
+
+#[uniffi::export]
+pub fn prompt_text(version: String) -> Option<String> {
+    tr::prompt_text(&version).map(str::to_string)
+}
+#[uniffi::export]
+pub fn prompt_hash(version: String) -> Option<String> {
+    tr::prompt_hash(&version)
+}
+#[uniffi::export]
+pub fn default_prompt_version() -> String {
+    tr::DEFAULT_PROMPT_VERSION.to_string()
+}
+#[uniffi::export]
+pub fn decoding_id() -> String {
+    tr::DECODING_ID.to_string()
+}
+#[uniffi::export]
+pub fn sanitize_subtitle(input: String) -> FfiSanitized {
+    match tr::sanitize_subtitle(&input) {
+        tr::Sanitized::Ok { text, truncated } => FfiSanitized::Ok { text, truncated },
+        tr::Sanitized::Reject => FfiSanitized::Reject,
+    }
+}
+#[uniffi::export]
+pub fn build_user_message(language: FfiSourceLanguage, sanitized_text: String) -> String {
+    tr::user_message(language.into(), &sanitized_text)
+}
+#[uniffi::export]
+pub fn parse_translation(raw: String, source: String, hit_token_cap: bool) -> FfiParsedTranslation {
+    match tr::parse_translation(&raw, &source, hit_token_cap) {
+        tr::ParsedTranslation::Translated(text) => FfiParsedTranslation::Translated { text },
+        tr::ParsedTranslation::Unreadable => FfiParsedTranslation::Unreadable,
+        tr::ParsedTranslation::Invalid(r) => FfiParsedTranslation::Invalid {
+            reason: format!("{r:?}"),
+        },
+    }
+}
+
+#[derive(uniffi::Record)]
+pub struct FfiHistoryPair {
+    pub language: FfiSourceLanguage,
+    pub source: String,
+    pub thai: String,
+}
+
+/// Per-session translation history (§4.2), opaque handle.
+#[derive(uniffi::Object)]
+pub struct TranslationHistory {
+    inner: Mutex<tr::TranslationHistory>,
+}
+
+#[uniffi::export]
+impl TranslationHistory {
+    #[uniffi::constructor]
+    pub fn new() -> Arc<Self> {
+        Arc::new(Self {
+            inner: Mutex::new(tr::TranslationHistory::default()),
+        })
+    }
+    pub fn push(&self, language: FfiSourceLanguage, source: String, thai: String) {
+        self.inner
+            .lock()
+            .unwrap()
+            .push(language.into(), &source, &thai)
+    }
+    pub fn clear(&self) {
+        self.inner.lock().unwrap().clear()
+    }
+    pub fn fingerprint(&self) -> String {
+        self.inner.lock().unwrap().fingerprint()
+    }
+    pub fn pairs(&self) -> Vec<FfiHistoryPair> {
+        self.inner
+            .lock()
+            .unwrap()
+            .pairs()
+            .iter()
+            .map(|(l, s, t)| FfiHistoryPair {
+                language: match l {
+                    tr::SourceLanguage::English => FfiSourceLanguage::English,
+                    tr::SourceLanguage::Japanese => FfiSourceLanguage::Japanese,
+                },
+                source: s.clone(),
+                thai: t.clone(),
+            })
+            .collect()
+    }
+}
+
+#[derive(uniffi::Record)]
+pub struct FfiCacheIdentity {
+    pub model_id: String,
+    pub model_revision: String,
+    pub quantization_id: String,
+    pub prompt_version: String,
+    pub decoding_id: String,
+    pub source_language: FfiSourceLanguage,
+    pub normalized_text: String,
+    pub history_fingerprint: String,
+    pub game_profile_id: Option<String>,
+    pub glossary_version: Option<String>,
+}
+
+#[uniffi::export]
+pub fn translation_cache_id(i: FfiCacheIdentity) -> String {
+    tr::cache_id(&tr::CacheIdentity {
+        model_id: &i.model_id,
+        model_revision: &i.model_revision,
+        quantization_id: &i.quantization_id,
+        prompt_version: &i.prompt_version,
+        decoding_id: &i.decoding_id,
+        source_language: i.source_language.into(),
+        normalized_text: &i.normalized_text,
+        history_fingerprint: &i.history_fingerprint,
+        game_profile_id: i.game_profile_id.as_deref(),
+        glossary_version: i.glossary_version.as_deref(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

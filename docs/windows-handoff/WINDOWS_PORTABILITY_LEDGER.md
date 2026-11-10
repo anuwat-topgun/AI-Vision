@@ -125,6 +125,17 @@
 - ADR link: ADR-0008
 - Status: IMPLEMENTED (macOS), OPEN (iPadOS, Windows)
 
+### WIN-CHANGE-20261110-007 — Prompt p2 / translation result contract (spec §14 "WIN-TRANSLATION-2026-11-10")
+- Date / author / PR: 2026-11-10 / Claude Code for repo owner / branch feat/prompt-p2
+- Status: Pending Windows implementation (documented by initial-platform team)
+- Decision: Shared canonical prompt p2 for Qwen3-4B-Instruct-2507; no Windows-only wording. Prompt text, hash, sanitizer, user-turn builder, parser, history and cache identity are in Rust core (`core/rust/src/translation.rs`, FFI in `core/ffi`) — Windows reuses them, not a copy.
+- Current platforms: macOS implemented; iPadOS shares code (not benchmarked); Android translator not yet built.
+- Windows adapter: implement Qwen-compatible chat template via llama.cpp, 3-pair history from core, greedy + 160 tokens, report `hit_token_cap` to the core parser, typed outcomes, stale-sequence rejection (epoch + subtitle id), no-mask unreadable fallback, chunked prefill (≤ n_batch), KV prefix reuse, free model before process exit.
+- Required parity: same prompt hash (p2 `94fde0d9…09f2`), `translation/p2/` cache namespace, parser rules, fixture results, invalid/timeout semantics.
+- Platform risks: chat template differences; Windows GPU backends (CUDA/Vulkan) vs Metal; Unicode normalization handled in core (no platform dependency).
+- Verification: TR-P2-001..020 + record model hash/quantization and P50/P95 on representative Windows hardware when the Windows phase starts.
+- Owner: assign during Windows planning.
+
 ## Change entry template (append, do not overwrite)
 
 ```markdown

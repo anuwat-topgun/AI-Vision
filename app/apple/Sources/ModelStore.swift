@@ -25,6 +25,8 @@ final class ModelStore: ObservableObject {
         if let found = Self.findLocalModel() { await load(url: found) }
     }
 
+    func reject(_ message: String) { if translator == nil { state = .failed(message) } }
+
     var isLoading: Bool { if case .loading = state { true } else { false } }
 
     /// Largest-first is not wanted; prefer the tested model, else the smallest .gguf (fits memory).

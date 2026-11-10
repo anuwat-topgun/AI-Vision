@@ -55,13 +55,19 @@ final class MkvPlaybackTests: XCTestCase {
     func testOcrDuringVlcPlayback() async throws {
         let e = VLCPlaybackEngine()
         _ = try await e.open(url: try url("synth_ja_1080p60_001"))
-        e.play(rate: 1)
         var ocr = SubtitleOCR(); ocr.hint = .ja
         var seen = Set<String>(), wrong: [String] = []
-        for _ in 0..<44 {
-            try await Task.sleep(nanoseconds: 250_000_000)
-            guard let pb = e.frames.nextFrame(), let r = try ocr.recognize(pb) else { continue }
-            if Golden.ja.contains(where: { $0.2 == r.text }) { seen.insert(r.text) } else { wrong.append(r.text) }
+        // For each line: seek into it, keep playing, read frames as they arrive (speed-independent: CI VMs are slow).
+        for (start, end, _) in Golden.ja {
+            _ = await e.seek(to: start + 0.3)
+            e.play(rate: 1)
+            let deadline = Date().addingTimeInterval(min(2.0, end - start - 0.5))
+            while Date() < deadline {
+                try await Task.sleep(nanoseconds: 50_000_000)
+                guard let pb = e.frames.nextFrame(), let r = try ocr.recognize(pb) else { continue }
+                if Golden.ja.contains(where: { $0.2 == r.text }) { seen.insert(r.text) } else { wrong.append(r.text) }
+            }
+            e.pause()
         }
         e.close()
         XCTAssertEqual(seen.count, 3, "seen \(seen)")

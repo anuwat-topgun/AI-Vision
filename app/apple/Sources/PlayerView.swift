@@ -89,9 +89,11 @@ struct FilePlayerScreen: View {
             ToolbarItem { Button("Open", systemImage: "folder") { showPicker = true } }
             ToolbarItem { modelButton }
         }
-        .fileImporter(isPresented: $showModelPicker,
-                      allowedContentTypes: [UTType(filenameExtension: "gguf") ?? .data]) { result in
-            if case .success(let url) = result { Task { await models.load(url: url) } }
+        // .gguf has no system UTType, so filtering by it greys the file out: accept any file, check after.
+        .fileImporter(isPresented: $showModelPicker, allowedContentTypes: [.data, .item]) { result in
+            guard case .success(let url) = result else { return }
+            if url.pathExtension.lowercased() == "gguf" { Task { await models.load(url: url) } }
+            else { models.reject("\(url.lastPathComponent) is not a .gguf model file") }
         }
         .task {
             #if DEBUG

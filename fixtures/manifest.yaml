@@ -1,37 +1,64 @@
-manifest_version: 1
-notice: "Placeholder manifest. Add only synthetic, owned or licensed media; never commit commercial game footage without documented permission."
+manifest_version: 2
+notice: "Synthetic, team-owned fixtures only. Never commit commercial game footage without documented permission."
+generator: fixtures/tools/generate_fixtures.py
+generator_ffmpeg: "ffmpeg version 8.0.1 Copyright (c) 2000-2025 the FFmpeg developers"
+font: {name: "Noto Sans JP (variable, wght=700)", license: "SIL OFL 1.1", sha256: "c2f3b4d463500a2ddcd3849cded1fceeb9fd6d1c32e6cbecd568453ba50fc68f"}
 fixtures:
   - id: synth_en_1080p60_001
-    path: null
+    path: media/synth_en_1080p60_001.mp4
     owner: engineering-team
-    license: internal-owned
+    license: internal-owned (synthetic; font OFL-1.1)
     language: en
+    style: bottom_outline
     container: mp4
     codec: h264
     audio: aac
     width: 1920
     height: 1080
     fps: 60
-    sha256: null
+    duration_ms: 12000
+    audio_markers: 1kHz 50ms beep at each subtitle start_ms
+    sha256: 9b48f423a0ec8975d29cc15cbfd09f910917f9f8ac6e101ed820a5cb5c1f4e9c
+    redistribution: allowed
     expected_subtitles:
       - start_ms: 1200
         end_ms: 3900
         text: "We should reach the gate before dawn."
-        normalized_bbox: [0.2, 0.82, 0.6, 0.10]
+        normalized_bbox: [0.2307, 0.8287, 0.5385, 0.062]
+      - start_ms: 4500
+        end_ms: 7200
+        text: "Keep your lantern low. The guards are near."
+        normalized_bbox: [0.1984, 0.8287, 0.6026, 0.0611]
+      - start_ms: 7800
+        end_ms: 10800
+        text: "If we split up, meet me at the old well."
+        normalized_bbox: [0.2354, 0.8287, 0.5286, 0.0611]
   - id: synth_ja_1080p60_001
-    path: null
+    path: media/synth_ja_1080p60_001.mp4
     owner: engineering-team
-    license: internal-owned
+    license: internal-owned (synthetic; font OFL-1.1)
     language: ja
+    style: dialog_box
     container: mp4
     codec: h264
     audio: aac
     width: 1920
     height: 1080
     fps: 60
-    sha256: null
+    duration_ms: 12000
+    audio_markers: 1kHz 50ms beep at each subtitle start_ms
+    sha256: 1dddc1275420db0d0b57031edb955d6c8c46c593dd3bbf0d816bbcd1c22ddde7
+    redistribution: allowed
     expected_subtitles:
       - start_ms: 1600
         end_ms: 4200
         text: "夜明けまでに門へ行こう。"
-        normalized_bbox: [0.2, 0.82, 0.6, 0.10]
+        normalized_bbox: [0.3292, 0.8306, 0.3411, 0.0583]
+      - start_ms: 4800
+        end_ms: 7500
+        text: "灯りを低くして。見張りが近い。"
+        normalized_bbox: [0.287, 0.8306, 0.4255, 0.0583]
+      - start_ms: 8100
+        end_ms: 11000
+        text: "はぐれたら、古い井戸で会おう。"
+        normalized_bbox: [0.287, 0.8306, 0.4255, 0.0583]

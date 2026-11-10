@@ -61,6 +61,22 @@
 - ADR link: ADR-0006
 - Status: IMPLEMENTED
 
+### WIN-CHANGE-20261110-003 — Synthetic EN/JA golden fixtures
+- Date / author / PR: 2026-11-10 / Claude Code for repo owner / branch feat/synthetic-fixtures
+- Requirement and AC IDs: §16.2, §22.2 step 4; AC-001..003, AC-005, AC-006, AC-010, E2E-01, E2E-03
+- Current decision and motivation: first golden media for file playback, OCR and seek-race tests.
+- Changed modules / contracts / formats: `fixtures/manifest.yaml` v2 (adds path, sha256, style, duration_ms, audio_markers, font); `fixtures/media/*.mp4`; `fixtures/tools/generate_fixtures.py`, `verify_fixtures.py`.
+- iPadOS/macOS behavior: H.264 High/AAC MP4 — AVFoundation baseline format.
+- Android behavior: same file, Media3 baseline format.
+- Windows future equivalent and required adapter: same files must play via Media Foundation (WIN-001); generator is pure Python + ffmpeg and runs on Windows.
+- Compatibility/ABI/API/schema implications: manifest schema version 1 → 2 (additive).
+- Dependency and licensing impact: Noto Sans JP (SIL OFL 1.1) used only to render fixtures; font binary not committed (downloaded by hash), license text committed.
+- Risks/unknowns and experiment needed: re-running the generator with a different ffmpeg/x264 version changes sha256; manifest records generator ffmpeg version.
+- Windows tasks with priority, owner and due milestone: include these fixtures in the R5 WIN-001 file-playback parity test (P1, QA Lead).
+- Tests / fixtures / evidence: `verify_fixtures.py` OK (2 fixtures); frames visually checked.
+- ADR link: none (no architecture change)
+- Status: IMPLEMENTED
+
 ## Change entry template (append, do not overwrite)
 
 ```markdown

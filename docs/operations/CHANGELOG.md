@@ -8,6 +8,9 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — Synthetic fixtures (2026-11-10)
+- Added two synthetic 12 s 1080p60 H.264/AAC fixtures (EN bottom-outline, JA dialog-box), 3 invented subtitles each with exact PTS + bbox and onset audio beeps; generator + CI verifier. Manifest v2. Ledger WIN-CHANGE-20261110-003.
+
 ## [Unreleased] — Native UI (2026-11-10)
 - Replaced Flutter shell with native SwiftUI (iPadOS + macOS) and Kotlin/Jetpack Compose (Android) apps calling the Rust core via UniFFI (`core/ffi`). Handoff README bumped to v2.1. ADR-0006 supersedes ADR-0004. Windows ledger: WIN-CHANGE-20261110-002.
 

@@ -7,13 +7,17 @@ struct SubtitleOverlayView: View {
     let videoSize: CGSize
     var showDebug: Bool
     var fontScale: CGFloat = 1
+    /// MASK_REPLACE (§9.1, FR-011): cover the source text box and draw Thai in its place.
+    var replace = false
 
     var body: some View {
         GeometryReader { geo in
             let rect = Self.aspectFit(videoSize, in: geo.size)
             ZStack(alignment: .topLeading) {
                 if showDebug { debugLayer(rect) }
-                if let o = pipeline.overlay { subtitle(o, rect) }
+                if let o = pipeline.overlay {
+                    if replace, o.status == .shown { replaced(o, rect) } else { subtitle(o, rect) }
+                }
             }
         }
         .allowsHitTesting(false)
@@ -45,6 +49,34 @@ struct SubtitleOverlayView: View {
         .frame(width: rect.width * 0.92)
         .fixedSize(horizontal: false, vertical: true)
         .position(x: rect.midX, y: max(rect.minY + fontSize, top - fontSize * 1.1))
+    }
+
+    /// Patch over the original box (sampled panel colour, else dark translucent), Thai sized to fit it.
+    @ViewBuilder private func replaced(_ o: SubtitlePipeline.Overlay, _ rect: CGRect) -> some View {
+        let pad: CGFloat = 0.006
+        let box = o.bbox.insetBy(dx: -pad * 1.5, dy: -pad)
+        let w = box.width * rect.width, h = box.height * rect.height
+        let bg = pipeline.background
+        let fill = bg.map { Color(red: Double($0.x), green: Double($0.y), blue: Double($0.z)) } ?? .black.opacity(0.8)
+        let luma = bg.map { 0.299 * $0.x + 0.587 * $0.y + 0.114 * $0.z } ?? 0
+        let ink: Color = luma > 0.55 ? .black : .white
+        // Thai needs ~1.3× the Latin line height; never smaller than readable.
+        let fontSize = max(13, min(rect.height * 0.06 * fontScale, h * 0.75))
+        ZStack {
+            RoundedRectangle(cornerRadius: 4).fill(fill)
+            Text(o.thai ?? "")
+                .font(.system(size: fontSize, weight: .semibold))
+                .foregroundStyle(ink)
+                .multilineTextAlignment(.center)
+                .lineLimit(3)
+                .minimumScaleFactor(0.5)
+                .padding(.horizontal, 4)
+                .accessibilityIdentifier("thai_overlay")
+        }
+        .frame(width: max(w, rect.width * 0.12))
+        .frame(minHeight: h)
+        .fixedSize(horizontal: false, vertical: true)
+        .position(x: rect.minX + box.midX * rect.width, y: rect.minY + box.midY * rect.height)
     }
 
     @ViewBuilder private func debugLayer(_ rect: CGRect) -> some View {

@@ -16,15 +16,45 @@ struct OcrResult: Equatable {
     /// [left, top, width, height] normalized to the full frame, top-left origin (schema bbox).
     var bbox: CGRect
     var language: String // "en" | "ja"
+    /// Average colour of the box behind the text (RGB 0–1), when sampled from a pixel buffer.
+    var background: SIMD3<Float>? = nil
 }
 
 struct SubtitleOCR {
     /// Region of interest, normalized, top-left origin. Default = bottom band (BOTTOM_REGION, §6.2).
-    var roi = CGRect(x: 0.05, y: 0.62, width: 0.90, height: 0.36)
+    static let defaultRoi = CGRect(x: 0.05, y: 0.62, width: 0.90, height: 0.36)
+    var roi = SubtitleOCR.defaultRoi
     var hint: LanguageHint = .auto
 
     func recognize(_ pixelBuffer: CVPixelBuffer) throws -> OcrResult? {
-        try recognize(handler: VNImageRequestHandler(cvPixelBuffer: pixelBuffer, options: [:]))
+        guard var r = try recognize(handler: VNImageRequestHandler(cvPixelBuffer: pixelBuffer, options: [:]))
+        else { return nil }
+        r.background = Self.backgroundColor(around: r.bbox, in: CIImage(cvPixelBuffer: pixelBuffer))
+        return r
+    }
+
+    private static let ciContext = CIContext(options: [.workingColorSpace: NSNull()])
+
+    /// Mean colour of thin strips just above and below the text box: the panel behind the subtitle.
+    static func backgroundColor(around box: CGRect, in image: CIImage) -> SIMD3<Float>? {
+        let e = image.extent
+        guard e.width > 0, box.width > 0 else { return nil }
+        let strip = max(2, box.height * e.height * 0.25)
+        // CIImage origin is bottom-left; box is top-left normalized.
+        let x = e.minX + box.minX * e.width, w = box.width * e.width
+        let top = e.maxY - box.minY * e.height, bottom = e.maxY - box.maxY * e.height
+        var sum = SIMD3<Float>(repeating: 0), n: Float = 0
+        for r in [CGRect(x: x, y: top + 1, width: w, height: strip),
+                  CGRect(x: x, y: bottom - 1 - strip, width: w, height: strip)] {
+            let c = r.intersection(e)
+            guard !c.isNull, c.width >= 1, c.height >= 1 else { continue }
+            let avg = image.applyingFilter("CIAreaAverage", parameters: [kCIInputExtentKey: CIVector(cgRect: c)])
+            var px = [UInt8](repeating: 0, count: 4)
+            ciContext.render(avg, toBitmap: &px, rowBytes: 4, bounds: CGRect(x: 0, y: 0, width: 1, height: 1),
+                             format: .RGBA8, colorSpace: nil)
+            sum += SIMD3(Float(px[0]), Float(px[1]), Float(px[2])) / 255; n += 1
+        }
+        return n > 0 ? sum / n : nil
     }
 
     func recognize(_ image: CGImage) throws -> OcrResult? {
@@ -55,11 +85,37 @@ struct SubtitleOCR {
             }
             .filter { $0.2.height > 0.015 } // ignore tiny UI text
             .sorted { $0.2.minY < $1.2.minY }
-        guard !obs.isEmpty else { return nil }
-        let text = Self.joinLines(obs.map(\.0))
+        let lines = Self.subtitleBlock(obs.map { ($0.0, $0.2) }, centerX: roi.midX, zoneWidth: roi.width)
+        let kept = obs.filter { o in lines.contains { $0 == o.2 } }
+        guard !kept.isEmpty else { return nil }
+        return Self.result(kept)
+    }
+
+    /// Game screens put UI labels ("Auto Play", "Story Logs"…) near the subtitle. Keep only the
+    /// subtitle block: lines about as tall as the tallest line and vertically contiguous with it.
+    /// Short text off to the side (button labels at the corners, the speaker's name tag) is dropped
+    /// first: subtitles are centered or long, UI labels are short and off-center.
+    static func subtitleBlock(_ all: [(String, CGRect)], centerX: CGFloat = 0.5, zoneWidth: CGFloat = 0.9) -> [CGRect] {
+        let lines = all.filter { l in
+            l.1.width >= zoneWidth * 0.3 || abs(l.1.midX - centerX) <= zoneWidth * 0.12
+        }
+        guard let main = lines.max(by: { $0.1.height < $1.1.height }) else { return [] }
+        let h = main.1.height
+        let sized = lines.map(\.1).filter { $0.height >= h * 0.7 }.sorted { $0.minY < $1.minY }
+        guard let start = sized.firstIndex(of: main.1) else { return [main.1] }
+        var block = [main.1]
+        var i = start - 1
+        while i >= 0, block[0].minY - sized[i].maxY < h * 0.9 { block.insert(sized[i], at: 0); i -= 1 }
+        i = start + 1
+        while i < sized.count, sized[i].minY - block.last!.maxY < h * 0.9 { block.append(sized[i]); i += 1 }
+        return block
+    }
+
+    private static func result(_ obs: [(String, Float, CGRect)]) -> OcrResult {
+        let text = joinLines(obs.map(\.0))
         let conf = obs.map(\.1).reduce(0, +) / Float(obs.count)
         let box = obs.dropFirst().reduce(obs[0].2) { $0.union($1.2) }
-        return OcrResult(text: text, confidence: conf, bbox: box, language: Self.detectLanguage(text))
+        return OcrResult(text: text, confidence: conf, bbox: box, language: detectLanguage(text))
     }
 
     /// Japanese lines join without spaces; Latin lines with one space (§6.1 step 6).

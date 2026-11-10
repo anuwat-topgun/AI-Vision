@@ -84,6 +84,29 @@ final class SubtitlePipelineTests: XCTestCase {
         p.detach()
     }
 
+    func testGameUiLabelsAreDroppedFromSubtitleBlock() {
+        // Big 2-line subtitle plus small "Auto Play" / "Story Logs" buttons below it.
+        let lines: [(String, CGRect)] = [
+            ("Line one", CGRect(x: 0.2, y: 0.78, width: 0.6, height: 0.05)),
+            ("Line two", CGRect(x: 0.2, y: 0.84, width: 0.6, height: 0.05)),
+            ("Auto Play", CGRect(x: 0.75, y: 0.95, width: 0.08, height: 0.025)),
+            ("Story Logs", CGRect(x: 0.85, y: 0.95, width: 0.09, height: 0.025)),
+        ]
+        XCTAssertEqual(SubtitleOCR.subtitleBlock(lines), [lines[0].1, lines[1].1])
+    }
+
+    func testSameSizeCornerLabelsAndNameTagAreDropped() {
+        // Captured game frame: name tag, corner buttons and dialogue all share one small font.
+        let lines: [(String, CGRect)] = [
+            ("Rolan", CGRect(x: 0.25, y: 0.765, width: 0.04, height: 0.022)),
+            ("Autoplay", CGRect(x: 0.06, y: 0.79, width: 0.06, height: 0.022)),
+            ("Story Log", CGRect(x: 0.86, y: 0.79, width: 0.07, height: 0.022)),
+            ("That being said, I can't just leave these people here unprotected.",
+             CGRect(x: 0.27, y: 0.82, width: 0.46, height: 0.022)),
+        ]
+        XCTAssertEqual(SubtitleOCR.subtitleBlock(lines), [lines[3].1])
+    }
+
     func testShownThenClearedWhenTextVanishes() async throws { // AC-011
         let p = SubtitlePipeline()
         p.translator = FakeTranslator()
@@ -94,7 +117,9 @@ final class SubtitlePipelineTests: XCTestCase {
         p.handle(r, ocrMs: 1, tag: tag); p.handle(r, ocrMs: 1, tag: tag)
         try await Task.sleep(nanoseconds: 50_000_000)
         XCTAssertEqual(p.overlay?.thai, "TH(Hi there)")
-        p.handle(nil, ocrMs: 1, tag: tag); p.handle(nil, ocrMs: 1, tag: tag)
+        p.handle(nil, ocrMs: 1, tag: tag); p.handle(nil, ocrMs: 1, tag: tag); p.handle(nil, ocrMs: 1, tag: tag)
+        XCTAssertNotNil(p.overlay, "Thai is held briefly after the source vanishes (no blink)")
+        try await Task.sleep(nanoseconds: UInt64((SubtitlePipeline.holdAfterVanish + 0.2) * 1e9))
         XCTAssertNil(p.overlay)
         // Same text again: history now contains it, so the context differs and the cache key
         // differs too (§8 history fingerprint) — the spec prefers correctness over hit rate.

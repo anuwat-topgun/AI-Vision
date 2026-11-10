@@ -61,16 +61,19 @@ final class SubtitlePipeline: ObservableObject {
     @Published var enabled = true { didSet { if !enabled { invalidate() } } }
     @Published var hint: LanguageHint = .auto { didSet { ocr.hint = hint; invalidate() } }
     @Published private(set) var lastOcrBox: CGRect?
-    var roi: CGRect { ocr.roi }
+    /// Average colour around the source text (RGB 0–1), for Mask & Replace.
+    @Published private(set) var background: SIMD3<Float>?
+    /// OCR zone, normalized top-left origin. Only text inside it is read and translated.
+    @Published var roi = SubtitleOCR.defaultRoi { didSet { ocr.roi = roi; invalidate() } }
 
     /// OCR samples per second (§4.4 default 2–5).
     var sampleRate: Double = 4
     var translator: SubtitleTranslator?
 
     private var ocr = SubtitleOCR()
-    private let tracker = SubtitleTracker(stableSamples: 2, missTolerance: 1, minConfidence: 0.4)
+    private let tracker = SubtitleTracker(stableSamples: 2, missTolerance: 2, minConfidence: 0.4)
     private let ocrQueue = DispatchQueue(label: "aivision.ocr", qos: .userInitiated)
-    private weak var frames: FrameSource?
+    private var frames: FrameSource? // strong: per-zone taps are owned here
     private var session: CoreSession?
     private var timer: Timer?
     private var ocrInFlight = false
@@ -79,6 +82,9 @@ final class SubtitlePipeline: ObservableObject {
     /// Session-scoped history: cleared on new file, seek and language change (§4.2, TR-P2-017).
     private let history = TranslationHistory()
     private var currentBox: [UInt64: CGRect] = [:]
+    private var hideTask: Task<Void, Never>?
+    /// Seconds the Thai stays after the source subtitle disappears.
+    static var holdAfterVanish = 0.8
 
     func attach(frames: FrameSource, session: CoreSession) {
         detach()
@@ -100,6 +106,7 @@ final class SubtitlePipeline: ObservableObject {
     /// Seek / hint change / disable: drop everything tied to the old position (AC-010, AC-011).
     func invalidate() {
         translateTask?.cancel(); translateTask = nil
+        hideTask?.cancel(); hideTask = nil
         history.clear()
         _ = tracker.reset()
         overlay = nil
@@ -132,12 +139,23 @@ final class SubtitlePipeline: ObservableObject {
         debug.lastOcrText = r?.text ?? ""
         debug.lastOcrConfidence = r?.confidence ?? 0
         lastOcrBox = r?.bbox
+        if let bg = r?.background { background = bg }
         for ev in tracker.observe(text: r?.text, confidence: r?.confidence ?? 0) {
             switch ev {
             case .vanished(let id):
-                if overlay?.subtitleId == id { overlay = nil; translateTask?.cancel() }
+                if overlay?.subtitleId == id {
+                    translateTask?.cancel()
+                    // Hold the Thai a moment so it doesn't blink off between text frames.
+                    hideTask?.cancel()
+                    hideTask = Task { [weak self] in
+                        try? await Task.sleep(for: .milliseconds(Int(Self.holdAfterVanish * 1000)))
+                        guard !Task.isCancelled, let self, self.overlay?.subtitleId == id else { return }
+                        self.overlay = nil
+                    }
+                }
                 currentBox[id] = nil
             case .stable(let id, let text):
+                hideTask?.cancel()
                 let box = r?.bbox ?? .zero
                 currentBox[id] = box
                 startTranslation(id: id, text: text, language: r?.language ?? SubtitleOCR.detectLanguage(text),
@@ -178,7 +196,11 @@ final class SubtitlePipeline: ObservableObject {
                               status: .failed("No translation model loaded — choose one with the cpu button"))
             return
         }
-        overlay = Overlay(subtitleId: id, sourceText: text, thai: nil, bbox: box, status: .translating)
+        if overlay?.status == .shown {
+            overlay?.subtitleId = id // previous Thai stays until the new one is ready (no blink)
+        } else {
+            overlay = Overlay(subtitleId: id, sourceText: text, thai: nil, bbox: box, status: .translating)
+        }
         let request = TranslationRequest(sourceText: text, language: lang, history: history.pairs())
         translateTask = Task { [weak self] in
             let t0 = CACurrentMediaTime()

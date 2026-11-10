@@ -8,6 +8,9 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — E02 File playback (2026-11-10)
+- Video File screen on iPadOS/macOS (AVPlayer) and Android (Media3): system file picker, play/pause, exact seek, ±10 s, speed 0.5–2×, volume/mute, fullscreen; seek bumps core epoch; clear errors for unsupported/DRM/damaged files. Tests run against golden fixtures. Ledger WIN-CHANGE-20261110-004.
+
 ## [Unreleased] — Synthetic fixtures (2026-11-10)
 - Added two synthetic 12 s 1080p60 H.264/AAC fixtures (EN bottom-outline, JA dialog-box), 3 invented subtitles each with exact PTS + bbox and onset audio beeps; generator + CI verifier. Manifest v2. Ledger WIN-CHANGE-20261110-003.
 

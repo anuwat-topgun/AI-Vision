@@ -12,5 +12,8 @@
 | KI-008 | Native video surface + GPU/AI contention unmeasured (Flutter bridge removed by ADR-0006) | High | OPEN | native performance spike | Client lead |
 | KI-009 | ~~Flutter shell not built~~ — CLOSED by ADR-0006 (Flutter removed) | — | CLOSED | — | Client lead |
 | KI-011 | Android app built but not yet launched on an emulator/tablet; no Compose UI test yet | Medium | OPEN | run on tablet, add instrumented test | Android lead |
+| KI-013 | Android instrumented tests run only locally; CI has no emulator job yet | Medium | OPEN | add emulator CI job or device lab | Android lead |
+| KI-014 | Recent Files (Apple bookmarks / Android persisted URIs) not built yet | Medium | OPEN | E02 follow-up | Client lead |
+| KI-015 | macOS App Sandbox entitlement (user-selected read-only) not set; needed for App Store | Medium | OPEN | decide with D-005 | iOS lead |
 | KI-012 | Apple builds need a signing team for device install; CI builds unsigned | Low | OPEN | set DEVELOPMENT_TEAM in project.yml | iOS lead |
 | KI-010 | Owners for all roles/decisions D-001..D-009 unassigned | High | OPEN | kickoff assignment (§22.2 step 1) | PM |

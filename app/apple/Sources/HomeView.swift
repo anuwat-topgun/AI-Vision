@@ -4,6 +4,7 @@ import SwiftUI
 /// File Input is permanent (ADR-0003, AC-004) — never hide it behind a debug flag.
 struct HomeView: View {
     @State private var notice: String?
+    @State private var showFile = false
     private let coreVersion = coreApiVersion()
 
     var body: some View {
@@ -18,6 +19,7 @@ struct HomeView: View {
                 Text("Offline mode · Cloud off · core API v\(coreVersion)")
                     .font(.footnote).foregroundStyle(.secondary).padding(8)
             }
+            .navigationDestination(isPresented: $showFile) { FilePlayerScreen() }
             .alert(notice ?? "", isPresented: Binding(get: { notice != nil }, set: { if !$0 { notice = nil } })) {}
         }
     }
@@ -25,7 +27,7 @@ struct HomeView: View {
     @ViewBuilder private var tiles: some View {
         ModeTile(systemImage: "film", title: "Video File / ไฟล์วิดีโอ",
                  subtitle: "MP4 / MOV / MKV (where supported)") {
-            notice = "File adapter not implemented yet (E02)"
+            showFile = true
         }
         .accessibilityIdentifier("tile_file")
         ModeTile(systemImage: "cable.connector", title: "Live Capture / จับภาพสด",

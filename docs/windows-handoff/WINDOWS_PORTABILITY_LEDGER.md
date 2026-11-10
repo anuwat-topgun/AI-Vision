@@ -77,6 +77,22 @@
 - ADR link: none (no architecture change)
 - Status: IMPLEMENTED
 
+### WIN-CHANGE-20261110-004 — E02 file playback (Apple + Android)
+- Date / author / PR: 2026-11-10 / Claude Code for repo owner / branch feat/e02-file-playback
+- Requirement and AC IDs: FR-001, FR-002, FR-010, NFR-009; AC-001, AC-002, AC-003, AC-010 (epoch on seek), AC-033 (media part)
+- Current decision and motivation: permanent File mode playback with exact seek, 10 s skip, speed 0.5–2×, volume/mute, fullscreen; seek bumps the Rust session epoch.
+- Changed modules / contracts / formats: `app/apple/Sources/PlayerModel.swift`, `PlayerView.swift`; `app/android/.../PlayerController.kt`, `FilePlayerScreen.kt`. No core/FFI/schema change.
+- iPadOS/macOS behavior: AVPlayer + AVPlayerLayer; document picker with security-scoped URL, file not copied; waits for `readyToPlay` before seeking; DRM/undecodable files rejected with distinct messages.
+- Android behavior: Media3 ExoPlayer 1.8 with `SeekParameters.EXACT` + PlayerView surface; SAF `OpenDocument` with persisted read grant (no raw paths); PlaybackException codes mapped to user messages.
+- Windows future equivalent and required adapter: WIN-001 Media Foundation `IMFMediaEngine` (or MediaPlayer in WinUI) behind the same controller shape: open(opaque source) / seek(ms) bumps epoch / Ready|Failed(message) states; `FileOpenPicker` for WIN-007. Same fixtures and same seek-accuracy assertion (±1 frame) are the parity test.
+- Compatibility/ABI/API/schema implications: source id is an opaque `file:<uuid>`, never a path (§19.1(6)).
+- Dependency and licensing impact: androidx.media3 exoplayer/ui 1.8.0 (Apache-2.0); AndroidX test libs (Apache-2.0, test only).
+- Risks/unknowns and experiment needed: Recent Files / bookmark restore not yet built; MKV/HEVC not yet tested; no real tablet/iPad run.
+- Windows tasks with priority, owner and due milestone: port controller contract + seek test to Media Foundation at R5 (P1, Architecture Lead).
+- Tests / fixtures / evidence: macOS XCTest 5/5 (M4 Max, macOS 26.7.1); Android instrumented 2/2 on DOT_tablet AVD (Android 16); iPadOS build only.
+- ADR link: none (implements ADR-0003 within ADR-0006)
+- Status: IMPLEMENTED
+
 ## Change entry template (append, do not overwrite)
 
 ```markdown

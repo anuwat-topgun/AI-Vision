@@ -17,6 +17,15 @@
 | QA-007 | iPadOS | TBD | UVC + external TV simultaneously | TBD / dock | negotiate | TBD | Processed TV | NOT_TESTED | TBD |
 | QA-008 | Android tablet | TBD | UVC + external TV simultaneously | TBD / dock | negotiate | TBD | Processed TV | NOT_TESTED | TBD |
 
+## Automated software evidence (not device certification)
+| Date | Platform / host | Tests | Result | Covers |
+|---|---|---|---|---|
+| 2026-11-10 | macOS 26.7.1, Apple M4 Max (dev machine) | XCTest FilePlaybackTests + CoreBridgeTests | 5/5 PASS | open fixtures, 1080p60 decode metadata, exact seek ±1 frame, epoch bump, corrupt file error |
+| 2026-11-10 | Android 16 emulator DOT_tablet (arm64) | FilePlaybackTest (instrumented) | 2/2 PASS | same as above via Media3 |
+| 2026-11-10 | iPadOS | generic build only | BUILD OK | not run on an iPad |
+
+QA-001..003 stay NOT_TESTED until run manually on real devices with the full AC steps (audio, fullscreen, picker).
+
 ## Golden fixtures available
 | Fixture | Lang | Style | Format | Use |
 |---|---|---|---|---|

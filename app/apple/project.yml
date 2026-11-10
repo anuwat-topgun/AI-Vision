@@ -28,7 +28,11 @@ targets:
   AIVisionTests:
     type: bundle.unit-test
     supportedDestinations: [iOS, macOS]
-    sources: [Tests]
+    sources:
+      - Tests
+      - path: ../../fixtures/media
+        type: folder
+        buildPhase: resources
     dependencies: [{ target: AIVision }]
     settings:
       base:

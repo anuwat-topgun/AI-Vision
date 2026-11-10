@@ -5,6 +5,7 @@ import SwiftUI
 struct HomeView: View {
     @State private var notice: String?
     @State private var showFile = false
+    @State private var showLive = false
     private let coreVersion = coreApiVersion()
 
     var body: some View {
@@ -20,8 +21,12 @@ struct HomeView: View {
                     .font(.footnote).foregroundStyle(.secondary).padding(8)
             }
             .navigationDestination(isPresented: $showFile) { FilePlayerScreen() }
+            .navigationDestination(isPresented: $showLive) { LiveCaptureScreen() }
             #if DEBUG
-            .onAppear { if DevLaunch.file != nil { showFile = true } }
+            .onAppear {
+                if DevLaunch.file != nil { showFile = true }
+                if UserDefaults.standard.bool(forKey: "live") { showLive = true }
+            }
             #endif
             .alert(notice ?? "", isPresented: Binding(get: { notice != nil }, set: { if !$0 { notice = nil } })) {}
         }
@@ -35,7 +40,7 @@ struct HomeView: View {
         .accessibilityIdentifier("tile_file")
         ModeTile(systemImage: "cable.connector", title: "Live Capture / จับภาพสด",
                  subtitle: "UVC capture card — qualified devices only") {
-            notice = "UVC adapter not implemented yet (E06/E07)"
+            showLive = true
         }
         .accessibilityIdentifier("tile_live")
     }

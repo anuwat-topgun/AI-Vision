@@ -136,6 +136,22 @@
 - Verification: TR-P2-001..020 + record model hash/quantization and P50/P95 on representative Windows hardware when the Windows phase starts.
 - Owner: assign during Windows planning.
 
+### WIN-CHANGE-20261110-008 — E07 Live UVC capture on macOS
+- Date / author / PR: 2026-11-10 / Claude Code for repo owner / branch feat/e07-uvc-capture-macos
+- Requirement and AC IDs: FR-003, FR-009 (partial), NFR-009; AC-014 (no false support claim), AC-016 (macOS UVC; unplug/replug), AC-018 (source switch resets)
+- Current decision and motivation: AVFoundation external-device capture; preview via AVCaptureVideoPreviewLayer; OCR frames via latest-frame-only AVCaptureVideoDataOutput (420f) into the same SubtitlePipeline. Format ladder 1080p60 → 1080p30 → 720p60 → 720p30, uncompressed preferred over MJPEG, run ≤60 fps. Audio optional (AVCaptureAudioPreviewOutput, default off to avoid webcam echo). Unplug → epoch bump (Reconnect), overlay cleared, auto-restart when the same device returns.
+- Changed modules / contracts / formats: Apple `LiveCaptureEngine` (+ `CaptureFormatOption.preferred`), `LiveCaptureScreen`; Home Live tile enabled. No core/FFI change; core source ids `uvc:<uuid>`.
+- iPadOS/macOS behavior: macOS tested with a USB UVC webcam; iPadOS compiles the same engine (no audio preview on iOS) — not run on an iPad (E06).
+- Android behavior: not implemented (E08, D-002).
+- Windows future equivalent and required adapter: Media Foundation `IMFSourceReader` / `MediaCapture` for UVC enumeration + format selection using the same ladder; frames to the same FrameSource contract; audio via WASAPI loopback of the capture card's UAC device; hot-plug via device watcher → epoch bump.
+- Compatibility/ABI/API/schema implications: none.
+- Dependency and licensing impact: none (system frameworks).
+- Risks/unknowns and experiment needed: real capture cards (MJPEG vs YUY2 cost, 1080p60 stability, USB bandwidth), latency measurement (§14), HDCP/black input detection.
+- Windows tasks with priority, owner and due milestone: port format ladder + hot-plug semantics to MF (P2, R5).
+- Tests / fixtures / evidence: format-ladder unit tests; discovery test lists OBSBOT Meet SE (VID 13668 / PID 65278) 4 formats; live run 1920×1080 420v @ 30 fps, 0 dropped, pipeline active.
+- ADR link: none (implements README §5 within ADR-0006)
+- Status: IMPLEMENTED (macOS, webcam only — capture card NOT_TESTED)
+
 ## Change entry template (append, do not overwrite)
 
 ```markdown

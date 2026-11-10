@@ -63,6 +63,8 @@ final class SubtitlePipeline: ObservableObject {
     @Published private(set) var lastOcrBox: CGRect?
     /// Average colour around the source text (RGB 0–1), for Mask & Replace.
     @Published private(set) var background: SIMD3<Float>?
+    /// Source line height (normalized) of the current subtitle.
+    @Published private(set) var lineHeight: CGFloat?
     /// OCR zone, normalized top-left origin. Only text inside it is read and translated.
     @Published var roi = SubtitleOCR.defaultRoi { didSet { ocr.roi = roi; invalidate() } }
 
@@ -140,6 +142,7 @@ final class SubtitlePipeline: ObservableObject {
         debug.lastOcrConfidence = r?.confidence ?? 0
         lastOcrBox = r?.bbox
         if let bg = r?.background { background = bg }
+        if let lh = r?.lineHeight { lineHeight = lh }
         for ev in tracker.observe(text: r?.text, confidence: r?.confidence ?? 0) {
             switch ev {
             case .vanished(let id):

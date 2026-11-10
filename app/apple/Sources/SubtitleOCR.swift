@@ -18,6 +18,8 @@ struct OcrResult: Equatable {
     var language: String // "en" | "ja"
     /// Average colour of the box behind the text (RGB 0–1), when sampled from a pixel buffer.
     var background: SIMD3<Float>? = nil
+    /// Height of one source text line (normalized), used to size Thai like the original.
+    var lineHeight: CGFloat? = nil
 }
 
 struct SubtitleOCR {
@@ -115,7 +117,8 @@ struct SubtitleOCR {
         let text = joinLines(obs.map(\.0))
         let conf = obs.map(\.1).reduce(0, +) / Float(obs.count)
         let box = obs.dropFirst().reduce(obs[0].2) { $0.union($1.2) }
-        return OcrResult(text: text, confidence: conf, bbox: box, language: detectLanguage(text))
+        let lineH = obs.map(\.2.height).sorted()[obs.count / 2] // median line
+        return OcrResult(text: text, confidence: conf, bbox: box, language: detectLanguage(text), lineHeight: lineH)
     }
 
     /// Japanese lines join without spaces; Latin lines with one space (§6.1 step 6).

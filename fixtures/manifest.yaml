@@ -1,0 +1,37 @@
+manifest_version: 1
+notice: "Placeholder manifest. Add only synthetic, owned or licensed media; never commit commercial game footage without documented permission."
+fixtures:
+  - id: synth_en_1080p60_001
+    path: null
+    owner: engineering-team
+    license: internal-owned
+    language: en
+    container: mp4
+    codec: h264
+    audio: aac
+    width: 1920
+    height: 1080
+    fps: 60
+    sha256: null
+    expected_subtitles:
+      - start_ms: 1200
+        end_ms: 3900
+        text: "We should reach the gate before dawn."
+        normalized_bbox: [0.2, 0.82, 0.6, 0.10]
+  - id: synth_ja_1080p60_001
+    path: null
+    owner: engineering-team
+    license: internal-owned
+    language: ja
+    container: mp4
+    codec: h264
+    audio: aac
+    width: 1920
+    height: 1080
+    fps: 60
+    sha256: null
+    expected_subtitles:
+      - start_ms: 1600
+        end_ms: 4200
+        text: "夜明けまでに門へ行こう。"
+        normalized_bbox: [0.2, 0.82, 0.6, 0.10]

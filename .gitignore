@@ -1,0 +1,10 @@
+.DS_Store
+core/rust/target/
+app/flutter_ui/.dart_tool/
+app/flutter_ui/build/
+*.gguf
+*.onnx
+*.mlmodel
+*.mlpackage/
+*.safetensors
+.env

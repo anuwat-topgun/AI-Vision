@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/subtitle-event.schema.json",
+  "title": "SubtitleEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "source_id", "session_epoch", "subtitle_id", "start_pts_us", "end_pts_us", "source_language", "text", "bbox", "confidence"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "source_id": {"type": "string", "minLength": 1},
+    "session_epoch": {"type": "integer", "minimum": 0},
+    "subtitle_id": {"type": "string", "minLength": 1},
+    "start_pts_us": {"type": "integer", "minimum": 0},
+    "end_pts_us": {"type": "integer", "minimum": 0, "description": "Validate > start_pts_us at application level"},
+    "source_language": {"enum": ["en", "ja"]},
+    "text": {"type": "string", "minLength": 1},
+    "bbox": {"type": "array", "items": {"type": "number", "minimum": 0, "maximum": 1}, "minItems": 4, "maxItems": 4, "description": "[left, top, width, height] normalized; application checks bounds"},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "detector_version": {"type": "string"},
+    "ocr_version": {"type": "string"}
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/schemas/translation-request.schema.json",
+  "title": "TranslationRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "request_id", "source_id", "session_epoch", "subtitle_id", "input_language", "output_language", "text", "provider", "context"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "request_id": {"type": "string", "minLength": 1},
+    "source_id": {"type": "string", "minLength": 1},
+    "session_epoch": {"type": "integer", "minimum": 0},
+    "subtitle_id": {"type": "string", "minLength": 1},
+    "input_language": {"enum": ["en", "ja"]},
+    "output_language": {"const": "th"},
+    "text": {"type": "string", "minLength": 1, "maxLength": 5000},
+    "provider": {"enum": ["offline", "cloud"]},
+    "context": {"type": "array", "maxItems": 10, "items": {"type": "string", "maxLength": 1000}},
+    "glossary_hash": {"type": ["string", "null"]},
+    "prompt_version": {"type": "string"},
+    "model_id": {"type": "string"}
+  }
+}

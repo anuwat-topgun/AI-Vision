@@ -20,21 +20,7 @@ struct LiveCaptureScreen: View {
             Color.black.ignoresSafeArea()
             switch engine.state {
             case .running:
-                PlayerSurface(layer: engine.previewLayer)
-                    .overlay {
-                        ForEach(Array(engine.pipelines.enumerated()), id: \.offset) { i, p in
-                            SubtitleOverlayView(pipeline: p, videoSize: videoSize,
-                                                showDebug: showDebug && i == 0 && !editingZone,
-                                                replace: replaceMode && !editingZone)
-                        }
-                    }
-                    .overlay {
-                        if editingZone {
-                            SubtitleZoneEditor(zones: $zones, selected: $selectedZone, videoSize: videoSize)
-                        }
-                    }
-                    .overlay(alignment: .topTrailing) { if showDebug { captureStats } }
-                    .accessibilityLabel("Live video")
+                runningView
             case .starting:
                 ProgressView("Starting capture…").tint(.white).foregroundStyle(.white)
             default:
@@ -134,6 +120,26 @@ struct LiveCaptureScreen: View {
     }
 
     // MARK: Running
+
+    private var runningView: some View {
+        PlayerSurface(layer: engine.previewLayer)
+            .overlay { zoneOverlays }
+            .overlay {
+                if editingZone {
+                    SubtitleZoneEditor(zones: $zones, selected: $selectedZone, videoSize: videoSize)
+                }
+            }
+            .overlay(alignment: .topTrailing) { if showDebug { captureStats } }
+            .accessibilityLabel("Live video")
+    }
+
+    private var zoneOverlays: some View {
+        ForEach(Array(engine.pipelines.enumerated()), id: \.offset) { i, p in
+            SubtitleOverlayView(pipeline: p, videoSize: videoSize,
+                                showDebug: showDebug && i == 0 && !editingZone,
+                                replace: replaceMode && !editingZone)
+        }
+    }
 
     private var controls: some View {
         HStack(spacing: 16) {

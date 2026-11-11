@@ -1,0 +1,86 @@
+{
+  "id": "granblue_fantasy_relink",
+  "title": "Granblue Fantasy: Relink",
+  "setting": "High-fantasy sky world of floating islands; a crew of skyfarers travels on an airship.",
+  "style": "Lively fantasy adventure. Natural spoken Thai with warmth and energy; light archaic flavour only for knights, royalty or ancient beings. Keep battle shouts short and punchy.",
+  "glossary": [
+    {
+      "source": "Grandcypher",
+      "thai": "แกรนด์ไซเฟอร์"
+    },
+    {
+      "source": "skyfarer",
+      "thai": "นักเดินทางแห่งท้องฟ้า"
+    },
+    {
+      "source": "skyfarers",
+      "thai": "เหล่านักเดินทางแห่งท้องฟ้า"
+    },
+    {
+      "source": "Captain",
+      "thai": "กัปตัน"
+    },
+    {
+      "source": "Primal Beast",
+      "thai": ""
+    },
+    {
+      "source": "Zegagrande Skydom",
+      "thai": ""
+    },
+    {
+      "source": "Folca",
+      "thai": ""
+    }
+  ],
+  "characters": [
+    {
+      "name": "Gran",
+      "voice": "male protagonist captain; earnest, brave; speaks plainly, uses ผม/ฉัน rarely, often drops pronouns"
+    },
+    {
+      "name": "Djeeta",
+      "voice": "female protagonist captain; earnest, brave, upbeat; plain speech, no forced ค่ะ"
+    },
+    {
+      "name": "Lyria",
+      "thai_name": "ลีเรีย",
+      "voice": "female; gentle, kind girl; soft polite speech, may end with ค่ะ/นะคะ sparingly"
+    },
+    {
+      "name": "Vyrn",
+      "thai_name": "เวิร์น",
+      "voice": "male small dragon companion; cheeky, energetic, blunt; casual speech, uses ข้า, calls others เจ้า, no polite particles"
+    },
+    {
+      "name": "Katalina",
+      "thai_name": "คาทาลีน่า",
+      "voice": "female knight; composed, protective, formal but warm"
+    },
+    {
+      "name": "Rackam",
+      "thai_name": "แร็คแคม",
+      "voice": "male airship helmsman; laid-back, wry; casual speech"
+    },
+    {
+      "name": "Io",
+      "thai_name": "ไอโอ",
+      "voice": "female; young girl mage; proud, bratty, cheerful; casual speech"
+    },
+    {
+      "name": "Eugen",
+      "thai_name": "ยูเกน",
+      "voice": "male; older gunner; gruff, fatherly, joking"
+    },
+    {
+      "name": "Rosetta",
+      "thai_name": "โรเซ็ตต้า",
+      "voice": "female; mature woman; calm, teasing, elegant"
+    },
+    {
+      "name": "Rolan",
+      "thai_name": "โรแลน",
+      "voice": "male; serious, resolute"
+    }
+  ]
+}

@@ -180,3 +180,19 @@
 4. Track platform-specific code accidental leakage into `core/rust`.
 5. Record new model/dependency licenses and Windows compatible artifacts.
 6. On planned Windows milestone, convert entries into an ordered implementation backlog and acceptance matrix.
+
+### WIN-CHANGE-20261111-001 — Prompt p3: game profiles and speaker
+- Date / author / PR: 2026-11-11 / Claude Code for repo owner / branch feat/p3-game-profile-speaker
+- Requirement and AC IDs: FR-005, FR-007; ADR-0010
+- Current decision and motivation: shared prompt p3 plus game-profile JSON and speaker hints so translations follow each game's terms and each character's voice.
+- Changed modules / contracts / formats: core `profile.rs` (GameProfile JSON, render, hash, speaker_hint, system_prompt); `translation.rs` (PROMPT_P3, default p3, `user_message_with_speaker`, `CacheIdentity.speaker`); FFI `GameProfile` object, `build_user_message_with_speaker`, `plain_speaker_hint`, `FfiCacheIdentity.speaker`. New repo folder `profiles/`. Apple: GameProfileStore + Game menu, speaker-name zone role, n_ctx 4096.
+- iPadOS/macOS behavior: macOS tested (unit + local model A/B); iPadOS compiles, profile folder is the app's Application Support (no Files UI yet).
+- Android behavior: not wired (no on-device translation yet, E08).
+- Windows future equivalent and required adapter: load the same `profiles/*.json` from %APPDATA%\AIVision\Profiles; call the same FFI for system prompt / speaker / cache id; zone roles identical.
+- Compatibility/ABI/API/schema implications: FFI additions are additive; `FfiCacheIdentity` gained a field (bindings regenerated). Cache keys for p3 differ from p2 by design.
+- Dependency and licensing impact: none. Bundled profiles contain only game/character names and our own notes.
+- Risks/unknowns and experiment needed: profile size vs context on smaller devices; speaker OCR accuracy on stylised name tags.
+- Windows tasks with priority, owner and due milestone: profile folder + Game menu (P2, R5).
+- Tests / fixtures / evidence: core `profile_tests` (6), Apple `TranslationP3Tests` (pipeline wiring, speaker zone, bundled profiles parse, local-model A/B).
+- ADR link: ADR-0010
+- Status: IMPLEMENTED (macOS)

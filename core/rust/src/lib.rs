@@ -5,6 +5,7 @@ pub mod cache;
 pub mod contracts;
 pub mod epoch;
 pub mod fsm;
+pub mod profile;
 pub mod tracker;
 pub mod translation;
 

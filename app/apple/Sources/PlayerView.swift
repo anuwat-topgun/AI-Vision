@@ -46,6 +46,7 @@ let videoFileTypes: [UTType] = [.mpeg4Movie, .quickTimeMovie, .movie, .video, .a
 struct FilePlayerScreen: View {
     @StateObject private var model = PlayerModel()
     @EnvironmentObject private var models: ModelStore
+    @EnvironmentObject private var profiles: GameProfileStore
     @State private var showModelPicker = false
     @State private var showDebug = false
     @State private var showPicker = DevLaunch.file == nil
@@ -103,6 +104,9 @@ struct FilePlayerScreen: View {
             await models.restore()
         }
         .onReceive(models.$state) { _ in model.pipeline.translator = models.translator }
+        .onReceive(profiles.$selectedId) { id in
+            model.pipeline.profile = profiles.entries.first { $0.id == id }?.profile
+        }
         .fileImporter(isPresented: $showPicker, allowedContentTypes: videoFileTypes) { result in
             if case .success(let url) = result { Task { await model.open(url: url) } }
         }
@@ -191,6 +195,7 @@ struct PipelineControls: View {
         }.frame(maxWidth: 150).accessibilityLabel("Subtitle language")
         Toggle("ไทย", isOn: $pipeline.enabled).accessibilityLabel("Thai translation")
         SubtitleFontMenu()
+        GameProfileMenu()
     }
 }
 

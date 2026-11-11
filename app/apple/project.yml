@@ -19,6 +19,9 @@ targets:
     sources:
       - Sources
       - Generated/subtitle_ffi.swift
+      - path: ../../profiles   # bundled game profiles (p3, ADR-0010)
+        type: folder
+        buildPhase: resources
       - path: Vendor/VLCKit-COPYING.txt   # LGPL-2.1 notice shipped with the app (ADR-0008)
         buildPhase: resources
         destinationFilters: [macOS]

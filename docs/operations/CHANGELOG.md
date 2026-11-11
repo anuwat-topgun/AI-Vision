@@ -8,6 +8,12 @@
 - Introduced mandatory Windows Portability Ledger and per-PR documentation rule.
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
+## [Unreleased] — Prompt p3: game profiles and speaker (2026-11-11)
+- New default prompt p3 (ADR-0010): optional game profile (setting, style, glossary, characters with voice notes) appended to the system prompt; rollback with promptVersion = p2.
+- "Game" menu (file + live) picks a profile; bundled: Final Fantasy VII Remake/Rebirth, Granblue Fantasy: Relink. Own profiles go in Application Support/AIVision/Profiles (menu → Open profiles folder).
+- Live zones can be set to "Speaker name": the name tag is read (not translated) and sent as the speaker, with that character's voice from the profile, so pronouns and ครับ/ค่ะ fit the character.
+- Translation context 2048 → 4096 tokens.
+
 ## [Unreleased] — Thai text size matches the original (2026-11-10)
 - Thai size now follows the measured source line height (median OCR line), in both Overlay and Replace, for files and Live. New "Aa" menu: "Match original subtitle size" (on by default) and a 60–200% size multiplier; both saved.
 

@@ -5,6 +5,7 @@ import SwiftUI
 /// zone; drag on the selected zone's area to redraw it; tap a zone to select it.
 struct SubtitleZoneEditor: View {
     @Binding var zones: [CGRect]
+    @Binding var roles: [ZoneRole]
     @Binding var selected: Int
     let videoSize: CGSize
     @State private var draft: CGRect?
@@ -26,7 +27,8 @@ struct SubtitleZoneEditor: View {
                     Rectangle().fill(.white.opacity(0.001))
                         .overlay(Rectangle().stroke(i == selected ? .yellow : .cyan, lineWidth: i == selected ? 3 : 2))
                         .overlay(alignment: .topLeading) {
-                            Text(i == 0 ? "1 · dialogue" : "\(i + 1)")
+                            Text(i == 0 ? "1 · dialogue"
+                                 : roles.indices.contains(i) && roles[i] == .speaker ? "\(i + 1) · speaker name" : "\(i + 1)")
                                 .font(.caption.bold()).foregroundStyle(.black)
                                 .padding(.horizontal, 5).background(i == selected ? .yellow : .cyan)
                         }
@@ -56,7 +58,7 @@ struct SubtitleZoneEditor: View {
                 defer { draft = nil }
                 let r = Self.normalized(g.startLocation, g.location, in: rect)
                 guard r.width > 0.02, r.height > 0.015 else { return }
-                if addNew { zones.append(r); selected = zones.count - 1 }
+                if addNew { zones.append(r); roles.append(.translate); selected = zones.count - 1 }
                 else if zones.indices.contains(selected) { zones[selected] = r }
             }
     }
@@ -83,5 +85,20 @@ enum SubtitleZoneStore {
     }
     static func save(_ zones: [CGRect], _ key: String) {
         UserDefaults.standard.set(zones.flatMap { [$0.minX, $0.minY, $0.width, $0.height] }, forKey: key)
+    }
+}
+
+/// What a zone is for. Zone 1 always translates.
+enum ZoneRole: String, CaseIterable, Identifiable {
+    case translate, speaker
+    var id: String { rawValue }
+    var label: String { self == .translate ? "Translate" : "Speaker name (not translated)" }
+
+    static func load(_ key: String, count: Int) -> [ZoneRole] {
+        let saved = (UserDefaults.standard.stringArray(forKey: key) ?? []).compactMap(ZoneRole.init(rawValue:))
+        return (0..<count).map { $0 < saved.count && $0 > 0 ? saved[$0] : .translate }
+    }
+    static func save(_ roles: [ZoneRole], _ key: String) {
+        UserDefaults.standard.set(roles.map(\.rawValue), forKey: key)
     }
 }

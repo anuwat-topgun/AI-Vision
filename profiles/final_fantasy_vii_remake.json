@@ -1,0 +1,112 @@
+{
+  "id": "final_fantasy_vii_remake",
+  "title": "Final Fantasy VII Remake / Rebirth",
+  "setting": "Industrial sci-fi fantasy; the megacorporation Shinra drains Mako energy from the planet; the eco-rebel group AVALANCHE fights back in the city of Midgar.",
+  "style": "Cinematic and character-driven. Contemporary spoken Thai with attitude; no archaic ข้า/เจ้า. Keep sarcasm, banter and slang alive.",
+  "glossary": [
+    {
+      "source": "Mako",
+      "thai": "มาโค"
+    },
+    {
+      "source": "Materia",
+      "thai": "มาทีเรีย"
+    },
+    {
+      "source": "Midgar",
+      "thai": "มิดการ์"
+    },
+    {
+      "source": "Shinra",
+      "thai": "ชินระ"
+    },
+    {
+      "source": "SOLDIER",
+      "thai": ""
+    },
+    {
+      "source": "AVALANCHE",
+      "thai": ""
+    },
+    {
+      "source": "Turks",
+      "thai": "เติร์กส์"
+    },
+    {
+      "source": "Sector 7",
+      "thai": "เซกเตอร์ 7"
+    },
+    {
+      "source": "Seventh Heaven",
+      "thai": ""
+    },
+    {
+      "source": "gil",
+      "thai": "กิล"
+    }
+  ],
+  "characters": [
+    {
+      "name": "Cloud",
+      "aliases": [
+        "Cloud Strife"
+      ],
+      "thai_name": "คลาวด์",
+      "voice": "male ex-SOLDIER mercenary; cool, terse, aloof, dry; short lines, uses ผม/ฉัน rarely, never ครับ"
+    },
+    {
+      "name": "Barret",
+      "aliases": [
+        "Barret Wallace"
+      ],
+      "thai_name": "บาร์เร็ต",
+      "voice": "male AVALANCHE leader; loud, hot-headed, big-hearted; rough casual Thai (ฉัน/นาย), exclamations, no polite particles"
+    },
+    {
+      "name": "Tifa",
+      "aliases": [
+        "Tifa Lockhart"
+      ],
+      "thai_name": "ทิฟา",
+      "voice": "female bar owner and fighter; warm, caring, steady; natural casual speech, ค่ะ rarely"
+    },
+    {
+      "name": "Aerith",
+      "aliases": [
+        "Aerith Gainsborough"
+      ],
+      "thai_name": "แอริธ",
+      "voice": "female flower seller; cheerful, playful, teasing; light casual speech with นะ"
+    },
+    {
+      "name": "Jessie",
+      "thai_name": "เจสซี่",
+      "voice": "female AVALANCHE member; flirty, upbeat, quick-witted"
+    },
+    {
+      "name": "Biggs",
+      "thai_name": "บิ๊กส์",
+      "voice": "male AVALANCHE member; level-headed, friendly"
+    },
+    {
+      "name": "Wedge",
+      "thai_name": "เว็ดจ์",
+      "voice": "male AVALANCHE member; earnest, nervous, food-loving"
+    },
+    {
+      "name": "Red XIII",
+      "thai_name": "เรด XIII",
+      "voice": "wise beast; calm, formal, measured"
+    },
+    {
+      "name": "Yuffie",
+      "thai_name": "ยูฟี่",
+      "voice": "female ninja; hyper, cocky, playful slang"
+    },
+    {
+      "name": "Sephiroth",
+      "thai_name": "เซฟิรอธ",
+      "voice": "male legendary SOLDIER; cold, calm, menacing; formal, no particles"
+    }
+  ]
+}

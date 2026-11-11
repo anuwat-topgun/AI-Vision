@@ -9,6 +9,7 @@
 - Added FFI contracts, state machine, acceptance criteria, QA matrix and security/legal release gates.
 
 ## [Unreleased] — Typhoon models (2026-11-11)
+- macOS routes by language when both models are in ~/Models: English → Typhoon Translate 1.5, Japanese/other → Qwen3-4B (or the model you picked). The model button shows "EN Typhoon Translate · JA Qwen". Turn off with UserDefaults `routeByLanguage` = NO. iPad keeps one model.
 - Typhoon Translate 1.5 works as a local model (choose it with the cpu button): it gets its own prompt format carrying the game profile, speaker and recent lines. A/B against Qwen3-4B and Typhoon 2.5 in PROMPT_EVALUATION.md (ADR-0011). License not cleared for bundling (KI-033); Japanese unsupported by Typhoon (KI-034).
 
 ## [Unreleased] — Prompt p3: game profiles and speaker (2026-11-11)

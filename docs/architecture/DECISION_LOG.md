@@ -110,7 +110,7 @@ Do not delete or rewrite adopted decisions silently. For each material change ad
 - Date: 2026-11-11
 - Status: PROPOSED (developer A/B only; D-001 model choice still needs the §10.2 human evaluation and legal review)
 - Context: KI-031 — Qwen3-4B output stays literal even with p3.
-- Decision: `LlamaTranslator` selects a prompt adapter from the model: Typhoon Translate (`*typhoon-translate*`) gets its documented single-user-turn format with the same p3 information as numbered rules (prompt id `tt1.5+p3rules`, kept in the cache key); every other model uses canonical p3 chat. FFI exposes profile setting/style/glossary for adapters. Users pick the model with the existing model picker; auto-load still prefers the tested Qwen file unless a model was chosen before.
+- Decision: `LlamaTranslator` selects a prompt adapter from the model: Typhoon Translate (`*typhoon-translate*`) gets its documented single-user-turn format with the same p3 information as numbered rules (prompt id `tt1.5+p3rules`, kept in the cache key); every other model uses canonical p3 chat. FFI exposes profile setting/style/glossary for adapters. On macOS a `LanguageRouter` sends English to Typhoon Translate and everything else to the general model when both files are in ~/Models (owner decision 2026-11-11); its cache identity combines both models. iPadOS loads one model (memory).
 - Evidence: PROMPT_EVALUATION.md model comparison — Typhoon Translate most natural, P50 205 ms vs 234 ms (Qwen) on 15 lines.
 - Risks: Typhoon Translate model card metadata says Apache-2.0 but the text says Gemma License, plus OpenTyphoon terms (KI-033) — do not bundle or redistribute until legal review. Japanese not officially supported (KI-034).
 - Windows impact: WIN-CHANGE-20261111-002.

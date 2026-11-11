@@ -84,3 +84,20 @@ final class TranslationModelP3Tests: XCTestCase {
         XCTAssertEqual(glossaryHits, 1, "glossary term Mako → มาโค")
     }
 }
+
+final class LanguageRouterTests: XCTestCase {
+    func testEnglishAndJapaneseGoToDifferentModels() async throws {
+        let en = FakeTranslator(), ja = FakeTranslator()
+        en.outcome = { _ in .translated("EN") }; ja.outcome = { _ in .translated("JA") }
+        let r = LanguageRouter(english: en, other: ja)
+        let a = try await r.translate(TranslationRequest(sourceText: "Hi", language: .english, history: []))
+        let b = try await r.translate(TranslationRequest(sourceText: "やあ", language: .japanese, history: []))
+        XCTAssertEqual(a, .translated("EN")); XCTAssertEqual(b, .translated("JA"))
+        XCTAssertTrue(r.modelId.hasPrefix("en:fake+ja:fake"))
+    }
+
+    func testTyphoonTranslateFileDetection() {
+        XCTAssertTrue(ModelStore.isTyphoonTranslate(URL(fileURLWithPath: "/m/typhoon-translate1.5-4b-q4_k_m.gguf")))
+        XCTAssertFalse(ModelStore.isTyphoonTranslate(URL(fileURLWithPath: "/m/typhoon2.5-qwen3-4b-q4_k_m.gguf")))
+    }
+}

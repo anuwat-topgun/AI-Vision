@@ -308,13 +308,13 @@ pub fn build_user_message_with_speaker(
 
 #[derive(Debug, uniffi::Error)]
 pub enum FfiProfileError {
-    Invalid { message: String },
+    Invalid { reason: String },
 }
 
 impl std::fmt::Display for FfiProfileError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FfiProfileError::Invalid { message } => write!(f, "invalid game profile: {message}"),
+            FfiProfileError::Invalid { reason } => write!(f, "invalid game profile: {reason}"),
         }
     }
 }
@@ -331,7 +331,7 @@ impl GameProfile {
     pub fn from_json(json: String) -> Result<Arc<Self>, FfiProfileError> {
         subtitle_core::profile::GameProfile::from_json(&json)
             .map(|inner| Arc::new(Self { inner }))
-            .map_err(|message| FfiProfileError::Invalid { message })
+            .map_err(|reason| FfiProfileError::Invalid { reason })
     }
     pub fn id(&self) -> String {
         self.inner.id.clone()

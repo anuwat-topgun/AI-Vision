@@ -2,18 +2,18 @@ import SwiftUI
 
 /// Live Capture screen (E07, FR-003, AC-016): choose a UVC device + format, preview with Thai overlay.
 struct LiveCaptureScreen: View {
-    @StateObject private var engine = LiveCaptureEngine()
-    @EnvironmentObject private var models: ModelStore
-    @EnvironmentObject private var profiles: GameProfileStore
+    @StateObject fileprivate var engine = LiveCaptureEngine()
+    @EnvironmentObject fileprivate var models: ModelStore
+    @EnvironmentObject fileprivate var profiles: GameProfileStore
     @State private var deviceId: String?
     @State private var formatId: String? // nil = Auto (§5.2 ladder)
     @State private var audioId: String?  // nil = no audio
     @State private var showDebug = false
     @State private var showModelPicker = false
     @State private var editingZone = false
-    @State private var zones: [CGRect] = []
+    @State fileprivate var zones: [CGRect] = []
     @State private var selectedZone = 0
-    @State private var roles: [ZoneRole] = []
+    @State fileprivate var roles: [ZoneRole] = []
     @AppStorage("liveReplaceMode") private var replaceMode = false
     private static let zoneKey = "liveSubtitleZones"
     private static let roleKey = "liveSubtitleZoneRoles"
@@ -38,12 +38,7 @@ struct LiveCaptureScreen: View {
             if url.pathExtension.lowercased() == "gguf" { Task { await models.load(url: url) } }
             else { models.reject("\(url.lastPathComponent) is not a .gguf model file") }
         }
-        .onReceive(models.$state) { _ in engine.pipelines.forEach { $0.translator = models.translator } }
-        .onChange(of: zones) { _, z in engine.setZones(z, roles: roles) }
-        .onChange(of: roles) { _, r in engine.setZones(zones, roles: r) }
-        .onReceive(profiles.$selectedId) { id in engine.setProfile(profiles.entries.first { $0.id == id }?.profile) }
-        .onReceive(engine.pipeline.$hint) { h in engine.pipelines.dropFirst().forEach { if $0.hint != h { $0.hint = h } } }
-        .onReceive(engine.pipeline.$enabled) { e in engine.pipelines.dropFirst().forEach { if $0.enabled != e { $0.enabled = e } } }
+        .modifier(syncModifier)
         .onAppear {
             zones = SubtitleZoneStore.load(Self.zoneKey)
             if zones.isEmpty { zones = [SubtitleOCR.defaultRoi] }
@@ -61,6 +56,16 @@ struct LiveCaptureScreen: View {
         .onDisappear { engine.stop() }
         .onChange(of: deviceId) { _, id in if let id { engine.select(deviceId: id); formatId = nil } }
     }
+
+    /// Keeps every zone pipeline in sync with model, profile, zones and controls.
+    /// Split out of `body` so the type checker stays fast (CI timed out on one long chain).
+    private var syncModifier: some ViewModifier { LiveSyncModifier(view: self) }
+
+    fileprivate func applyModel() { engine.pipelines.forEach { $0.translator = models.translator } }
+    fileprivate func applyZones() { engine.setZones(zones, roles: roles) }
+    fileprivate func applyProfile(_ id: String?) { engine.setProfile(profiles.entries.first { $0.id == id }?.profile) }
+    fileprivate func applyHint(_ h: LanguageHint) { engine.pipelines.dropFirst().forEach { if $0.hint != h { $0.hint = h } } }
+    fileprivate func applyEnabled(_ e: Bool) { engine.pipelines.dropFirst().forEach { if $0.enabled != e { $0.enabled = e } } }
 
     // MARK: Setup
 
@@ -214,5 +219,18 @@ struct LiveCaptureScreen: View {
         case .ready(let n): Button(n, systemImage: "cpu.fill") { showModelPicker = true }
         case .failed(let e): Button("Model error", systemImage: "exclamationmark.triangle") { showModelPicker = true }.help(e)
         }
+    }
+}
+
+private struct LiveSyncModifier: ViewModifier {
+    let view: LiveCaptureScreen
+    func body(content: Content) -> some View {
+        content
+            .onReceive(view.models.$state) { _ in view.applyModel() }
+            .onChange(of: view.zones) { _, _ in view.applyZones() }
+            .onChange(of: view.roles) { _, _ in view.applyZones() }
+            .onReceive(view.profiles.$selectedId) { view.applyProfile($0) }
+            .onReceive(view.engine.pipeline.$hint) { view.applyHint($0) }
+            .onReceive(view.engine.pipeline.$enabled) { view.applyEnabled($0) }
     }
 }

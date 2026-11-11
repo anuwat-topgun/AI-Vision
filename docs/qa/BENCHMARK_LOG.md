@@ -50,3 +50,11 @@ All numbers require measured evidence. Targets in README §14 are not performanc
 - Meaning/plot fidelity; Thai naturalness; character voice; names/glossary consistency; truncation/readability; hallucinations (separate count).
 - Score English and Japanese independently, anonymize candidate model to reviewers where practical.
 - Define acceptable thresholds in ADR after R0, not before.
+
+### BENCH-20261111-001 — Translation latency by local model (p3 information)
+- Date / device: 2026-11-11 / MacBook Pro M4 Max, macOS, Metal, all layers offloaded
+- Models (Q4_K_M GGUF): Qwen3-4B-Instruct-2507; typhoon2.5-qwen3-4b (sha256 b3653029…3e511); typhoon-translate1.5-4b (sha256 11ab2464…287177)
+- Workload: 15 lines (11 game EN with profile + speaker, 2 EN generic, 2 JA), greedy, max 160 tokens, single request at a time, model warm after first line
+- Result (end-to-end translate call): Qwen3-4B P50 234 ms / max 1328 ms; Typhoon 2.5 P50 221 ms / max 1366 ms; Typhoon Translate P50 205 ms / max 563 ms. Max is the first (cold-prefix) call.
+- Evidence: ModelCompareTests output in docs/translation/PROMPT_EVALUATION.md
+- Status: developer measurement, not a release gate

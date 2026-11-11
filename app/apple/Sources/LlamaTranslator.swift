@@ -29,6 +29,8 @@ final class LlamaTranslator: SubtitleTranslator, @unchecked Sendable {
     private let ctx: OpaquePointer
     private let vocab: OpaquePointer
     private let template: String?
+    /// Model-specific prompt adapter (Typhoon Translate 1.5).
+    let usesTyphoonTranslateFormat: Bool
     private let maxOutputTokens: Int32 = 160
     static let batchSize = 512
     private let nBatch = LlamaTranslator.batchSize
@@ -58,6 +60,9 @@ final class LlamaTranslator: SubtitleTranslator, @unchecked Sendable {
         template = llama_model_chat_template(m, nil).map { String(cString: $0) }
         let name = modelURL.deletingPathExtension().lastPathComponent
         modelId = name
+        // Typhoon Translate expects its own single-user-turn format (model card), not p3 chat.
+        usesTyphoonTranslateFormat = name.lowercased().contains("typhoon-translate")
+        if usesTyphoonTranslateFormat { promptVersion = "tt1.5+p3rules" }
         let attrs = try? FileManager.default.attributesOfItem(atPath: modelURL.path)
         let size = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
         let mtime = Int64((attrs?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)
@@ -99,11 +104,19 @@ final class LlamaTranslator: SubtitleTranslator, @unchecked Sendable {
         guard case .ok(let clean, _) = sanitizeSubtitle(input: request.sourceText) else {
             return .unreadable // §5 rule 5: don't ask the model about non-language input
         }
+        if usesTyphoonTranslateFormat {
+            let msgs = [("user", Self.typhoonTranslatePrompt(clean, request))]
+            return try await run(msgs, source: clean)
+        }
         let system = request.profile.map { $0.systemPrompt(version: promptVersion) } ?? promptText(version: promptVersion)
         guard let system else { throw LlamaError.unknownPrompt(promptVersion) }
-        let gen = generation.increment() // newer request cancels older ones between tokens
         let msgs = Self.buildMessages(system: system, current: clean, language: request.language,
                                      history: request.history, speaker: request.speaker)
+        return try await run(msgs, source: clean)
+    }
+
+    private func run(_ msgs: [(String, String)], source clean: String) async throws -> TranslationOutcome {
+        let gen = generation.increment() // newer request cancels older ones between tokens
         let (raw, hitCap) = try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { cont in
                 queue.async { [self] in cont.resume(with: Result { try self.run(messages: msgs, gen: gen) }) }
@@ -118,6 +131,28 @@ final class LlamaTranslator: SubtitleTranslator, @unchecked Sendable {
         }
     }
 
+
+    /// Typhoon Translate 1.5 prompt (model card format) carrying the same p3 information as rules.
+    static func typhoonTranslatePrompt(_ text: String, _ r: TranslationRequest) -> String {
+        let lang = r.language == .japanese ? "Japanese" : "English"
+        var rules = ["This is one line of video game dialogue. Write natural, in-character spoken Thai for a subtitle, not a literal gloss.",
+                     "Do not add ครับ/ค่ะ or other particles unless the speaker's voice calls for them."]
+        if let p = r.profile {
+            rules.append("Game: \(p.title()). \(p.setting()) Style: \(p.style())")
+            for g in p.glossary() {
+                rules.append(g.thai.isEmpty || g.thai == g.source
+                             ? "Keep \"\(g.source)\" unchanged in Latin letters."
+                             : "Translate \"\(g.source)\" as \"\(g.thai)\".")
+            }
+        }
+        if let s = r.speaker { rules.append("The speaker is \(s). Match this character's voice, pronouns and gender.") }
+        if !r.history.isEmpty {
+            let ctx = r.history.suffix(3).map { "\"\($0.source)\" → \"\($0.thai)\"" }.joined(separator: "; ")
+            rules.append("Previous lines, for context only (do not translate them again): \(ctx)")
+        }
+        let numbered = rules.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
+        return "Translate the following \(lang) text into Thai, strictly following the rules below and return only the translated text.\nRules:\n\(numbered)\nSource Text:\n\n\(text)"
+    }
 
     /// Messages per spec §4.1: system (canonical, from core) + ≤3 history pairs + current user turn.
     /// Roles and wrappers are created here, never from OCR text (§4.3).

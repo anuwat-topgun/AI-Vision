@@ -90,3 +90,40 @@ Produced by `TranslationModelP3Tests.testP2VersusP3WithProfileAndSpeaker` (local
 Findings: glossary terms now consistent; SOLDIER kept in Latin letters; female speakers no longer get ครับ; tone closer
 to character (Barret exclamatory, Cloud terse). Still wrong: "Stay behind me" → "อยู่ข้างๆ ฉัน" (meaning), Aerith line
 awkward. Next: human evaluation set from real play (100–200 lines), and compare a Thai-tuned model (Typhoon).
+
+
+## Model comparison — Qwen3-4B vs Typhoon 2.5 vs Typhoon Translate 1.5 (2026-11-11)
+
+All Q4_K_M GGUF, greedy, M4 Max (Metal), same p3 profile + speaker information. Typhoon Translate uses its
+model-card single-turn format with the profile/speaker/history expressed as numbered rules (`tt1.5+p3rules`).
+Reproduce: `TEST_RUNNER_AIVISION_COMPARE=1 xcodebuild test … -only-testing:AIVisionTests/ModelCompareTests`.
+
+| Speaker | Source | Qwen3-4B-Instruct-2507-Q4_K_M | typhoon2.5-qwen3-4b-q4_k_m | typhoon-translate1.5-4b-q4_k_m |
+|---|---|---|---|---|
+| Barret | Shinra's sucking the Mako right outta the planet! | ชินระดูดมาโคออกจากโลกอย่างสุดขีด! | ชินระดูดมาโคออกจากโลกมันหมดเลย! | ชินระกำลังดูดมาโคออกจากดาวเคราะห์นี่! |
+| Cloud | Not interested. | ไม่สนใจ | ไม่สนใจ | ไม่สนใจ |
+| Aerith | You're a funny one, you know that? | เธอแปลกน่ารักนะ รู้ไหมว่าแบบนี้? | นายก็ฮาไปหน่อยนะ | นายตลกจริงๆ นะ รู้ใช่มั้ย? |
+| Tifa | Thank you, Cloud. Really. | ขอบคุณนะ คลาวด์ จริงๆ | ขอบคุณนะ คลาวด์ | ขอบคุณนะ คลาวด์ จริงๆ |
+| Cloud | I'm SOLDIER. First Class. | ฉันเป็น SOLDIER ชั้นที่หนึ่ง | ผมเป็น SOLDIER ชั้นหนึ่ง | ผมคือ SOLDIER ชั้นหนึ่ง |
+| Barret | Don't you dare walk away from me, Spiky! | อย่าไปเดินหนีฉันได้หรอก นักหน้าที่! | อย่าเดินหนีฉันไปไหน! | อย่าเดินหนีฉันเด็ดขาด ไอ้หนังสูง! |
+| Vyrn | Come on, let's get back to the Grandcypher! | มาแล้ว กลับไปที่แกรนด์ไซเฟอร์กันเถอะ! | ข้าจะไปกับเจ้าเร็วๆ ไปยังแกรนด์ไซเฟอร์เลย! | มาเถอะ กลับไปที่แกรนด์ไซเฟอร์กันเลย! |
+| Lyria | Thank you so much, everyone. | ขอบคุณมากนะ ทุกคนค่ะ | ขอบคุณมากเลยนะคะ | ขอบคุณมากนะคะทุกคน |
+| Rolan | That being said, I can't just leave these people here unprotected. | ถึงอย่างนั้น ฉันก็ไม่สามารถทิ้งคนเหล่านี้อยู่ที่นี่โดยไม่มีการปกป้องได้ | ก็ตามนั้นแล้ว ข้าไม่อาจทิ้งพวกเขานี่ไว้เดี่ยวๆ แบบนี้ได้ | นั่นคือจริง แต่ผมไม่อาจปล่อยให้คนเหล่านี้อยู่ที่นี่โดยไร้การปกป้อง |
+| Katalina | Stay behind me, Lyria! | อยู่ข้างๆ ฉันเถอะ ลีเรีย! | อย่าไปข้างหน้าฉันนะ ลีเรีย | ตามฉันไว้ ไลริอา! |
+| Io | Hmph! I could've handled that myself, you know. | ฮึม! ฉันก็ทำได้เอง รู้ไหม? | ฮึๆๆ! เรื่องนั้นฉันทำเองได้แน่นอนนะ | ฮึ่ม! ฉันจัดการเรื่องนั้นเองได้ ไม่ต้องพึ่งเธอหรอกนะ |
+| – | Leave it to me! | ส่งให้ฉันดูแลเถอะ! | ไว้ผมดูแลไว้เลย | ให้ฉันจัดการเอง! |
+| – | What the hell are you doing?! | อะไรอยู่กับเธออยู่นี่! | เฮ้ย คุณกำลังทำอะไรอยู่กับนี่?! | คุณกำลังทำอะไรกันอยู่เนี่ย?! |
+| – | 夜明けまでに門へ行こう。 | ไปถึงประตูก่อนที่จะเช้า | เดินทางไปยังประตูให้เสร็จก่อนพระอาทิตย์ขึ้น | เราจะไปที่ประตูให้ถึงรุ่งเช้า |
+| – | ありがとうございます。 | ขอบคุณมากครับ | ขอบคุณมากครับ | ขอบคุณครับ |
+
+- Qwen3-4B-Instruct-2507-Q4_K_M: P50 234 ms, max 1328 ms (prompt p3)
+- typhoon2.5-qwen3-4b-q4_k_m: P50 221 ms, max 1366 ms (prompt p3)
+- typhoon-translate1.5-4b-q4_k_m: P50 205 ms, max 563 ms (prompt tt1.5+p3rules)
+
+Developer read (not the §10.2 human panel):
+- **Typhoon Translate 1.5** is the most natural and in character, gets idioms ("Leave it to me!" → ให้ฉันจัดการเอง!,
+  "What the hell…" → …เนี่ย?!) and the Io/Aerith tone; fastest (no long system prompt). Misses: "Spiky" → ไอ้หนังสูง
+  (add to glossary), "That being said" → นั่นคือจริง, "Lyria" spelled ไลริอา (ignores thai_name unless in glossary).
+- **Typhoon 2.5** is chattier but changes meaning more often (Vyrn line invented, "Stay behind me" → "don't go ahead").
+- **Qwen3-4B** is the most literal and weakest on idioms.
+- Japanese: Typhoon models are documented EN↔TH only; results here are similar to Qwen, but unsupported (KI-034).

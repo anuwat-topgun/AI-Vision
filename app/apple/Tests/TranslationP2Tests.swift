@@ -72,14 +72,14 @@ final class TranslationPipelineP2Tests: XCTestCase {
         func key(_ v: String) -> String {
             translationCacheId(i: FfiCacheIdentity(modelId: "m", modelRevision: "r", quantizationId: "q", promptVersion: v,
                 decodingId: decodingId(), sourceLanguage: .japanese, normalizedText: "門", historyFingerprint: "h",
-                gameProfileId: nil, glossaryVersion: nil))
+                gameProfileId: nil, glossaryVersion: nil, speaker: nil))
         }
         XCTAssertNotEqual(key("p1"), key("p2"))
         XCTAssertTrue(key("p2").hasPrefix("translation/p2/"))
     }
 
     func testCanonicalPromptAvailableAndHashed() { // TR-P2-020 (same text/hash on every platform via core)
-        XCTAssertEqual(defaultPromptVersion(), "p2")
+        XCTAssertEqual(defaultPromptVersion(), "p3")
         XCTAssertEqual(promptHash(version: "p2"), "94fde0d96671251ffb38eb4ba2619cccb4f434417a762d3129ab51865f2d09f2")
         XCTAssertTrue(promptText(version: "p2")!.hasPrefix("You are an expert Thai game localization translator."))
     }

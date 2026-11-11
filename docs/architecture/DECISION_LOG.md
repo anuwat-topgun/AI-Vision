@@ -96,6 +96,16 @@ Do not delete or rewrite adopted decisions silently. For each material change ad
 - Windows impact: WIN-CHANGE-20261110-007.
 - Related FR/AC: FR-005, FR-007; AC-007/008 (macOS), AC-010, AC-011.
 
+## ADR-0010 — Prompt p3: game profiles and speaker-aware translation
+- Date: 2026-11-11
+- Status: ACCEPTED for dev; human evaluation (spec §10.2) pending
+- Context: players found p2 output literal and flat for games — the model had no setting, no glossary and no idea who was speaking (wrong ครับ/ค่ะ, transliterated terms).
+- Decision: `core/prompts/p3.txt` = p2 + rules for a GAME PROFILE block and a `Speaker:` line (sha256 `a93e8a3e393743218b4436f38ddb6a6d59a54f0e0ef918fbdc994da6da80fa8c`). Profiles are JSON (`profiles/*.json`, user overrides in Application Support) parsed and rendered by Rust `profile.rs` (fields sanitized and capped, reference data only) and appended to the system prompt so KV prefix reuse still covers it. A Live zone can be marked "Speaker name": it is OCR'd but never translated; its text is matched against profile characters (name/aliases/Thai name) and sent with that character's voice note. Cache identity now uses `game_profile_id` = profile id, `glossary_version` = profile content hash, plus a new optional `speaker` component (absent = pre-p3 keys unchanged). Default prompt becomes `p3`; rollback `promptVersion` = `p2`.
+- Context size: n_ctx 2048 → 4096 for the profile.
+- Evidence: A/B on 9 game lines with Qwen3-4B Q4 — glossary applied (ชินระ/มาโค/แกรนด์ไซเฟอร์, SOLDIER kept), gender particles fixed (Tifa/Lyria), see PROMPT_EVALUATION.md. Remaining: small-model meaning errors ("behind me" → "ข้างๆ").
+- Windows impact: WIN-CHANGE-20261111-001.
+- Related FR/AC: FR-005, FR-007.
+
 ## New ADR template
 
 ```markdown

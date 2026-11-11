@@ -7,7 +7,7 @@ fn canonical_prompts_and_hashes() {
     assert_eq!(prompt_hash("p2").unwrap().len(), 64);
     assert_ne!(prompt_hash("p1"), prompt_hash("p2"));
     assert_eq!(prompt_text("p9"), None);
-    assert_eq!(DEFAULT_PROMPT_VERSION, "p2");
+    assert_eq!(DEFAULT_PROMPT_VERSION, "p3");
 }
 
 #[test]
@@ -113,6 +113,7 @@ fn cache_never_crosses_prompt_versions() {
         history_fingerprint: "h",
         game_profile_id: None,
         glossary_version: None,
+        speaker: None,
     };
     let a = cache_id(&base);
     let b = cache_id(&CacheIdentity {

@@ -277,6 +277,7 @@ pub struct FfiCacheIdentity {
     pub history_fingerprint: String,
     pub game_profile_id: Option<String>,
     pub glossary_version: Option<String>,
+    pub speaker: Option<String>,
 }
 
 #[uniffi::export]
@@ -292,7 +293,67 @@ pub fn translation_cache_id(i: FfiCacheIdentity) -> String {
         history_fingerprint: &i.history_fingerprint,
         game_profile_id: i.game_profile_id.as_deref(),
         glossary_version: i.glossary_version.as_deref(),
+        speaker: i.speaker.as_deref(),
     })
+}
+
+#[uniffi::export]
+pub fn build_user_message_with_speaker(
+    language: FfiSourceLanguage,
+    sanitized_text: String,
+    speaker: Option<String>,
+) -> String {
+    tr::user_message_with_speaker(language.into(), &sanitized_text, speaker.as_deref())
+}
+
+#[derive(Debug, uniffi::Error)]
+pub enum FfiProfileError {
+    Invalid { message: String },
+}
+
+impl std::fmt::Display for FfiProfileError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FfiProfileError::Invalid { message } => write!(f, "invalid game profile: {message}"),
+        }
+    }
+}
+
+/// Parsed game profile (prompt p3, ADR-0010).
+#[derive(uniffi::Object)]
+pub struct GameProfile {
+    inner: subtitle_core::profile::GameProfile,
+}
+
+#[uniffi::export]
+impl GameProfile {
+    #[uniffi::constructor]
+    pub fn from_json(json: String) -> Result<Arc<Self>, FfiProfileError> {
+        subtitle_core::profile::GameProfile::from_json(&json)
+            .map(|inner| Arc::new(Self { inner }))
+            .map_err(|message| FfiProfileError::Invalid { message })
+    }
+    pub fn id(&self) -> String {
+        self.inner.id.clone()
+    }
+    pub fn title(&self) -> String {
+        self.inner.title.clone()
+    }
+    pub fn content_hash(&self) -> String {
+        self.inner.hash()
+    }
+    pub fn system_prompt(&self, version: String) -> Option<String> {
+        subtitle_core::profile::system_prompt(&version, Some(&self.inner))
+    }
+    pub fn speaker_hint(&self, speaker: Option<String>) -> Option<String> {
+        subtitle_core::profile::speaker_hint(speaker.as_deref(), Some(&self.inner))
+    }
+}
+
+/// Speaker hint without a profile (name only, cleaned).
+#[uniffi::export]
+pub fn plain_speaker_hint(speaker: Option<String>) -> Option<String> {
+    subtitle_core::profile::speaker_hint(speaker.as_deref(), None)
 }
 
 #[cfg(test)]

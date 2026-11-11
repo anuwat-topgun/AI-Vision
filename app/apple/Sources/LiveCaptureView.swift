@@ -4,6 +4,7 @@ import SwiftUI
 struct LiveCaptureScreen: View {
     @StateObject private var engine = LiveCaptureEngine()
     @EnvironmentObject private var models: ModelStore
+    @EnvironmentObject private var profiles: GameProfileStore
     @State private var deviceId: String?
     @State private var formatId: String? // nil = Auto (§5.2 ladder)
     @State private var audioId: String?  // nil = no audio
@@ -12,8 +13,10 @@ struct LiveCaptureScreen: View {
     @State private var editingZone = false
     @State private var zones: [CGRect] = []
     @State private var selectedZone = 0
+    @State private var roles: [ZoneRole] = []
     @AppStorage("liveReplaceMode") private var replaceMode = false
     private static let zoneKey = "liveSubtitleZones"
+    private static let roleKey = "liveSubtitleZoneRoles"
 
     var body: some View {
         ZStack {
@@ -36,13 +39,16 @@ struct LiveCaptureScreen: View {
             else { models.reject("\(url.lastPathComponent) is not a .gguf model file") }
         }
         .onReceive(models.$state) { _ in engine.pipelines.forEach { $0.translator = models.translator } }
-        .onChange(of: zones) { _, z in engine.setZones(z) }
+        .onChange(of: zones) { _, z in engine.setZones(z, roles: roles) }
+        .onChange(of: roles) { _, r in engine.setZones(zones, roles: r) }
+        .onReceive(profiles.$selectedId) { id in engine.setProfile(profiles.entries.first { $0.id == id }?.profile) }
         .onReceive(engine.pipeline.$hint) { h in engine.pipelines.dropFirst().forEach { if $0.hint != h { $0.hint = h } } }
         .onReceive(engine.pipeline.$enabled) { e in engine.pipelines.dropFirst().forEach { if $0.enabled != e { $0.enabled = e } } }
         .onAppear {
             zones = SubtitleZoneStore.load(Self.zoneKey)
             if zones.isEmpty { zones = [SubtitleOCR.defaultRoi] }
-            engine.setZones(zones)
+            roles = ZoneRole.load(Self.roleKey, count: zones.count)
+            engine.setZones(zones, roles: roles)
             engine.refreshDevices()
             if deviceId == nil { deviceId = engine.devices.first?.id }
             #if DEBUG
@@ -126,7 +132,7 @@ struct LiveCaptureScreen: View {
             .overlay { zoneOverlays }
             .overlay {
                 if editingZone {
-                    SubtitleZoneEditor(zones: $zones, selected: $selectedZone, videoSize: videoSize)
+                    SubtitleZoneEditor(zones: $zones, roles: $roles, selected: $selectedZone, videoSize: videoSize)
                 }
             }
             .overlay(alignment: .topTrailing) { if showDebug { captureStats } }
@@ -161,14 +167,24 @@ struct LiveCaptureScreen: View {
             .help("Replace covers the original subtitle and draws Thai in its place")
             Toggle(isOn: $editingZone) { Label("Zones (\(zones.count))", systemImage: "rectangle.dashed") }
                 .toggleStyle(.button)
-                .onChange(of: editingZone) { _, on in if !on { SubtitleZoneStore.save(zones, Self.zoneKey) } }
+                .onChange(of: editingZone) { _, on in
+                    if !on { SubtitleZoneStore.save(zones, Self.zoneKey); ZoneRole.save(roles, Self.roleKey) }
+                }
             if editingZone {
+                if selectedZone > 0, roles.indices.contains(selectedZone) {
+                    Picker("Zone \(selectedZone + 1)", selection: $roles[selectedZone]) {
+                        ForEach(ZoneRole.allCases) { Text($0.label).tag($0) }
+                    }
+                    .fixedSize()
+                }
                 Button("Delete zone", systemImage: "trash") {
                     guard zones.count > 1, zones.indices.contains(selectedZone) else { return }
-                    zones.remove(at: selectedZone); selectedZone = 0
+                    zones.remove(at: selectedZone)
+                    if roles.indices.contains(selectedZone) { roles.remove(at: selectedZone) }
+                    selectedZone = 0
                 }
                 .disabled(zones.count <= 1)
-                Button("Reset") { zones = [SubtitleOCR.defaultRoi]; selectedZone = 0 }
+                Button("Reset") { zones = [SubtitleOCR.defaultRoi]; roles = [.translate]; selectedZone = 0 }
             }
             Toggle("Debug", isOn: $showDebug)
             Text("epoch \(engine.epoch)").font(.caption.monospaced()).foregroundStyle(.secondary)

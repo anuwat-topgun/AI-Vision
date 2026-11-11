@@ -17,6 +17,10 @@ struct TranslationRequest {
     var language: FfiSourceLanguage
     /// Successful pairs from this session only (§4.2).
     var history: [FfiHistoryPair]
+    /// Active game profile (p3): setting, style, glossary, characters.
+    var profile: GameProfile? = nil
+    /// Cleaned speaker hint (name, plus voice from the profile), from a speaker-name zone.
+    var speaker: String? = nil
 }
 
 /// Typed result at the renderer boundary (§6.2). Only `.translated` may render or mask.
@@ -67,6 +71,15 @@ final class SubtitlePipeline: ObservableObject {
     @Published private(set) var lineHeight: CGFloat?
     /// OCR zone, normalized top-left origin. Only text inside it is read and translated.
     @Published var roi = SubtitleOCR.defaultRoi { didSet { ocr.roi = roi; invalidate() } }
+
+    /// Zone role: false = speaker-name zone (read only, never translated or drawn).
+    var translates = true
+    /// Last text read in a speaker-name zone.
+    @Published private(set) var speakerText: String?
+    /// Where translating zones get the current speaker name from (Live speaker zone).
+    var speakerSource: (() -> String?)?
+    /// Active game profile; changing it starts a fresh context.
+    var profile: GameProfile? { didSet { if profile?.contentHash() != oldValue?.contentHash() { invalidate(); cache = [:] } } }
 
     /// OCR samples per second (§4.4 default 2–5).
     var sampleRate: Double = 4
@@ -141,6 +154,7 @@ final class SubtitlePipeline: ObservableObject {
         debug.lastOcrText = r?.text ?? ""
         debug.lastOcrConfidence = r?.confidence ?? 0
         lastOcrBox = r?.bbox
+        if !translates { speakerText = r?.text; return }
         if let bg = r?.background { background = bg }
         if let lh = r?.lineHeight { lineHeight = lh }
         for ev in tracker.observe(text: r?.text, confidence: r?.confidence ?? 0) {
@@ -170,7 +184,12 @@ final class SubtitlePipeline: ObservableObject {
         }
     }
 
-    private func cacheKey(_ text: String, _ lang: FfiSourceLanguage) -> String? {
+    private func currentSpeaker() -> String? {
+        let raw = speakerSource?()
+        return profile.map { $0.speakerHint(speaker: raw) } ?? plainSpeakerHint(speaker: raw)
+    }
+
+    private func cacheKey(_ text: String, _ lang: FfiSourceLanguage, speaker: String?) -> String? {
         guard let t = translator else { return nil }
         let normalized: String
         switch sanitizeSubtitle(input: text) {
@@ -181,13 +200,14 @@ final class SubtitlePipeline: ObservableObject {
             modelId: t.modelId, modelRevision: t.modelRevision, quantizationId: t.quantizationId,
             promptVersion: t.promptVersion, decodingId: decodingId(), sourceLanguage: lang,
             normalizedText: normalized, historyFingerprint: history.fingerprint(),
-            gameProfileId: nil, glossaryVersion: nil))
+            gameProfileId: profile?.id(), glossaryVersion: profile?.contentHash(), speaker: speaker))
     }
 
     private func startTranslation(id: UInt64, text: String, language: String, box: CGRect, tag: (String, UInt64)) {
         translateTask?.cancel() // single-flight: only the current subtitle matters
         let lang = FfiSourceLanguage(code: language)
-        let key = cacheKey(text, lang)
+        let speaker = currentSpeaker()
+        let key = cacheKey(text, lang, speaker: speaker)
         if let key, let hit = cache[key] {
             debug.cacheHits += 1
             overlay = Overlay(subtitleId: id, sourceText: text, thai: hit, bbox: box, status: .shown)
@@ -204,7 +224,8 @@ final class SubtitlePipeline: ObservableObject {
         } else {
             overlay = Overlay(subtitleId: id, sourceText: text, thai: nil, bbox: box, status: .translating)
         }
-        let request = TranslationRequest(sourceText: text, language: lang, history: history.pairs())
+        let request = TranslationRequest(sourceText: text, language: lang, history: history.pairs(),
+                                         profile: profile, speaker: speaker)
         translateTask = Task { [weak self] in
             let t0 = CACurrentMediaTime()
             do {

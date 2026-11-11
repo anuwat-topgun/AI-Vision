@@ -48,7 +48,7 @@ final class LlamaTranslator: SubtitleTranslator, @unchecked Sendable {
             throw LlamaError.loadFailed(modelURL.lastPathComponent)
         }
         var cp = llama_context_default_params()
-        cp.n_ctx = 2048
+        cp.n_ctx = 4096 // p3: game profile adds up to ~1k tokens to the system prompt
         cp.n_batch = UInt32(LlamaTranslator.batchSize)
         cp.n_threads = Int32(max(2, ProcessInfo.processInfo.activeProcessorCount - 2))
         cp.n_threads_batch = cp.n_threads
@@ -99,9 +99,11 @@ final class LlamaTranslator: SubtitleTranslator, @unchecked Sendable {
         guard case .ok(let clean, _) = sanitizeSubtitle(input: request.sourceText) else {
             return .unreadable // §5 rule 5: don't ask the model about non-language input
         }
-        guard let system = promptText(version: promptVersion) else { throw LlamaError.unknownPrompt(promptVersion) }
+        let system = request.profile.map { $0.systemPrompt(version: promptVersion) } ?? promptText(version: promptVersion)
+        guard let system else { throw LlamaError.unknownPrompt(promptVersion) }
         let gen = generation.increment() // newer request cancels older ones between tokens
-        let msgs = Self.buildMessages(system: system, current: clean, language: request.language, history: request.history)
+        let msgs = Self.buildMessages(system: system, current: clean, language: request.language,
+                                     history: request.history, speaker: request.speaker)
         let (raw, hitCap) = try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { cont in
                 queue.async { [self] in cont.resume(with: Result { try self.run(messages: msgs, gen: gen) }) }
@@ -120,13 +122,13 @@ final class LlamaTranslator: SubtitleTranslator, @unchecked Sendable {
     /// Messages per spec §4.1: system (canonical, from core) + ≤3 history pairs + current user turn.
     /// Roles and wrappers are created here, never from OCR text (§4.3).
     static func buildMessages(system: String, current: String, language: FfiSourceLanguage,
-                              history: [FfiHistoryPair]) -> [(String, String)] {
+                              history: [FfiHistoryPair], speaker: String? = nil) -> [(String, String)] {
         var msgs: [(String, String)] = [("system", system)]
         for h in history.suffix(3) {
             msgs.append(("user", buildUserMessage(language: h.language, sanitizedText: h.source)))
             msgs.append(("assistant", h.thai))
         }
-        msgs.append(("user", buildUserMessage(language: language, sanitizedText: current)))
+        msgs.append(("user", buildUserMessageWithSpeaker(language: language, sanitizedText: current, speaker: speaker)))
         return msgs
     }
 

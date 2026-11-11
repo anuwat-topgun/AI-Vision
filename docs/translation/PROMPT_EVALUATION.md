@@ -76,3 +76,17 @@ Fix: the app-built user turn restates the task next to the data
 | 018 | `testPlaybackThreadNotBlockedDuringSlowTranslation` | ✅ |
 | 019 | `testNameStableAcrossThreeLines` ("มิรา" ×3) | ✅ |
 | 020 | prompt text/hash served from Rust core; `testCanonicalPromptAvailableAndHashed` | ✅ on Apple; Android/Windows pending |
+
+
+## p3 — game profile + speaker (2026-11-11, Qwen3-4B-Instruct-2507 Q4_K_M, greedy)
+
+Profiles: bundled `final_fantasy_vii_remake`, `granblue_fantasy_relink`. Speaker hint from the profile's voice note.
+Produced by `TranslationModelP3Tests.testP2VersusP3WithProfileAndSpeaker` (local model only).
+
+```
+
+```
+
+Findings: glossary terms now consistent; SOLDIER kept in Latin letters; female speakers no longer get ครับ; tone closer
+to character (Barret exclamatory, Cloud terse). Still wrong: "Stay behind me" → "อยู่ข้างๆ ฉัน" (meaning), Aerith line
+awkward. Next: human evaluation set from real play (100–200 lines), and compare a Thai-tuned model (Typhoon).

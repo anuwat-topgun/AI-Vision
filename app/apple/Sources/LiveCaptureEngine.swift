@@ -61,16 +61,33 @@ final class LiveCaptureEngine: NSObject, ObservableObject {
     private(set) var coreSession: CoreSession?
 
     /// Replace the zone list (normalized rects). Keeps the main pipeline's settings on new zones.
-    func setZones(_ rois: [CGRect]) {
+    private var profile: GameProfile?
+
+    func setProfile(_ p: GameProfile?) {
+        profile = p
+        pipelines.forEach { $0.profile = p }
+    }
+
+    func setZones(_ rois: [CGRect], roles: [ZoneRole] = []) {
         let rois = rois.isEmpty ? [SubtitleOCR.defaultRoi] : rois
         while pipelines.count < rois.count {
             let p = SubtitlePipeline()
             p.translator = pipeline.translator; p.hint = pipeline.hint; p.enabled = pipeline.enabled
+            p.profile = profile
             if state == .running, let cs = coreSession { p.attach(frames: sink.tap(), session: cs) }
             pipelines.append(p)
         }
         while pipelines.count > rois.count { pipelines.removeLast().detach() }
         for (p, r) in zip(pipelines, rois) where p.roi != r { p.roi = r }
+        for (i, p) in pipelines.enumerated() {
+            let role = i > 0 && i < roles.count ? roles[i] : .translate
+            if p.translates != (role == .translate) { p.translates = role == .translate; p.invalidate() }
+        }
+        // Translating zones read the speaker from the first speaker-name zone.
+        let speakerZone = pipelines.first { !$0.translates }
+        for p in pipelines where p.translates {
+            p.speakerSource = { [weak speakerZone] in speakerZone?.speakerText }
+        }
     }
     private let sink = CaptureFrameSink()
     private let videoQueue = DispatchQueue(label: "aivision.capture.video", qos: .userInteractive)

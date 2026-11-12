@@ -196,3 +196,19 @@
 - Tests / fixtures / evidence: core `profile_tests` (6), Apple `TranslationP3Tests` (pipeline wiring, speaker zone, bundled profiles parse, local-model A/B).
 - ADR link: ADR-0010
 - Status: IMPLEMENTED (macOS)
+
+### WIN-CHANGE-20261111-002 — Model-specific prompt adapter (Typhoon Translate)
+- Date / author / PR: 2026-11-11 / Claude Code for repo owner / branch exp/typhoon-ab
+- Requirement and AC IDs: FR-005; ADR-0011
+- Current decision and motivation: some local models need their own prompt format; the adapter is chosen from the model file and carries the same p3 profile/speaker data.
+- Changed modules / contracts / formats: FFI `GameProfile.setting/style/glossary` (+ `FfiGlossaryEntry`); Apple `LlamaTranslator.typhoonTranslatePrompt`; local-only `ModelCompareTests`.
+- iPadOS/macOS behavior: macOS tested with the three local models; iPadOS compiles.
+- Android behavior: not wired (no on-device translation yet).
+- Windows future equivalent and required adapter: same adapter rule in the Windows llama.cpp host; prompt id `tt1.5+p3rules` must match so caches stay compatible.
+- Compatibility/ABI/API/schema implications: additive FFI only.
+- Dependency and licensing impact: no new bundled dependency; Typhoon weights are user-downloaded; license unclear (KI-033).
+- Risks/unknowns and experiment needed: human evaluation; Japanese coverage.
+- Windows tasks with priority, owner and due milestone: port adapter (P3, R5).
+- Tests / fixtures / evidence: ModelCompareTests table in PROMPT_EVALUATION.md.
+- ADR link: ADR-0011
+- Status: IMPLEMENTED (macOS), model choice PROPOSED

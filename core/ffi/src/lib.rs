@@ -319,6 +319,12 @@ impl std::fmt::Display for FfiProfileError {
     }
 }
 
+#[derive(uniffi::Record)]
+pub struct FfiGlossaryEntry {
+    pub source: String,
+    pub thai: String,
+}
+
 /// Parsed game profile (prompt p3, ADR-0010).
 #[derive(uniffi::Object)]
 pub struct GameProfile {
@@ -344,6 +350,23 @@ impl GameProfile {
     }
     pub fn system_prompt(&self, version: String) -> Option<String> {
         subtitle_core::profile::system_prompt(&version, Some(&self.inner))
+    }
+    pub fn setting(&self) -> String {
+        self.inner.setting.clone()
+    }
+    pub fn style(&self) -> String {
+        self.inner.style.clone()
+    }
+    /// (source, thai) pairs; empty thai = keep unchanged. For model-specific prompt adapters.
+    pub fn glossary(&self) -> Vec<FfiGlossaryEntry> {
+        self.inner
+            .glossary
+            .iter()
+            .map(|g| FfiGlossaryEntry {
+                source: g.source.clone(),
+                thai: g.thai.clone(),
+            })
+            .collect()
     }
     pub fn speaker_hint(&self, speaker: Option<String>) -> Option<String> {
         subtitle_core::profile::speaker_hint(speaker.as_deref(), Some(&self.inner))

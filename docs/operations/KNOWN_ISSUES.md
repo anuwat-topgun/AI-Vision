@@ -27,6 +27,8 @@
 | KI-025 | Metal residency sets disabled to avoid ggml exit abort; measure any perf impact on iPad | Low | OPEN | iPad benchmark | iOS lead |
 | KI-026 | Live Capture tested only with a USB webcam; no capture card / console yet, no optical latency measurement (§14) | High | OPEN | test with real capture card (QA-005) | Platform QA |
 | KI-027 | Unplug/replug path implemented but not exercised on hardware | Medium | OPEN | manual unplug test | Platform QA |
+| KI-033 | Typhoon Translate 1.5 license is inconsistent (card metadata Apache-2.0, text says Gemma License) and comes with OpenTyphoon terms; not cleared for bundling | High | OPEN | legal review before any distribution (D-001) | Legal |
+| KI-034 | Typhoon models are documented EN↔TH only; Japanese output works in a small test but is unsupported | Medium | OPEN | keep Qwen for JA or route by language | Translation |
 | KI-031 | p3 still makes small-model meaning errors (e.g. "Stay behind me" → "ข้างๆ"); profile quality depends on player-written voice notes | Medium | OPEN | human eval set; try Thai-tuned model (Typhoon) | Translation |
 | KI-032 | Speaker zone needs manual setup per game; stylised name tags may OCR wrongly (unknown names fall back to name only) | Low | OPEN | per-profile default zones | Pipeline |
 | KI-029 | Mask & Replace patch is a flat sampled colour: visible on gradients/animated backdrops; long Thai lines shrink to fit the source box (§9.1 known limitation) | Medium | OPEN | background-sampled gradient patch / allow box growth | Compositor |
